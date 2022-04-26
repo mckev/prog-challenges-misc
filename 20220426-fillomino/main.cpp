@@ -44,6 +44,7 @@ void print_board(const std::vector<std::vector<int>>& board) {
 
 
 void count_shape(const std::vector<std::vector<int>>& board, int target, COORD_T coord, std::set<COORD_T>& shape) {
+    // Count the area of the polyomino/shape on coordinate (y, x)
     // Output: shape.size()
     if (coord.y < 0 || coord.x < 0 || coord.y >= board.size() || coord.x >= board[0].size()) {
         return;
@@ -113,8 +114,9 @@ bool solve(std::vector<std::vector<int>>& board, std::deque<HINT_T>& hints);
 
 
 void explore_shape(std::vector<std::vector<int>>& board, std::deque<HINT_T>& hints, int target, const std::set<COORD_T>& intermediate_shape, std::set<std::set<COORD_T>>& all_prev_shapes) {
+    // This function generates all possible polyominoes/shapes with size "target". Will call solve() for each polyomino/shape to proceed with the next hint.
     if (intermediate_shape.size() == target) {
-        // We have achieved the target size!
+        // We have achieved the target polyomino/shape size!
 
         // Efficiency: Ensure this is not just permutation of the previous shapes
         bool is_in = all_prev_shapes.find(intermediate_shape) != all_prev_shapes.end();
@@ -123,7 +125,7 @@ void explore_shape(std::vector<std::vector<int>>& board, std::deque<HINT_T>& hin
         }
         all_prev_shapes.insert(intermediate_shape);
 
-        // Solve next hint
+        // Proceed to the next hint
         std::vector<std::vector<int>> board_copy = board;
         for (const COORD_T& coord : intermediate_shape) {
             board[coord.y][coord.x] = target;
@@ -215,6 +217,7 @@ int main() {
         {E, E, E, E, E, 5, 2, 4, E},
         {2, 3, E, E, E, E, E, E, E}
     };
+
     std::deque<HINT_T> hints;
     for (int i = 0; i < board.size(); i++) {
         for (int j = 0; j < board[i].size(); j++) {
@@ -227,6 +230,8 @@ int main() {
         }
     }
     std::reverse(hints.begin(), hints.end());
+
     solve(board, hints);
+
     return 0;
 }
