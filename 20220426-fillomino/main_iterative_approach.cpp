@@ -109,6 +109,65 @@ bool verify_intermediate_board(const std::vector<std::vector<int>>& board) {
 }
 
 
+bool solve(std::vector<std::vector<int>>& board, std::deque<HINT_T>& hints);
+
+
+void explore_shapes(std::vector<std::vector<int>>& board, std::deque<HINT_T>& hints, COORD_T start_coord, int target) {
+    // This function generates all possible polyominoes/shapes with size "target". Will call solve() for each polyomino/shape to proceed with the next hint.
+
+    std::set<std::set<COORD_T>> prev_shapes;
+    std::deque<std::set<COORD_T>> shapes; shapes.push_back({{start_coord.y, start_coord.x}});
+    while (! shapes.empty()) {
+        std::set<COORD_T> shape = shapes.front(); shapes.pop_front();
+
+        // Efficiency: Ensure this is not just permutation of the previous shapes
+        bool is_in = prev_shapes.find(shape) != prev_shapes.end();
+        if (is_in) {
+            continue;
+        }
+        prev_shapes.insert(shape);
+
+        if (shape.size() == target) {
+            // We have achieved the target polyomino/shape size!
+            // Proceed to the next hint
+            std::vector<std::vector<int>> board_copy = board;
+            for (const COORD_T& coord : shape) {
+                board[coord.y][coord.x] = target;
+            }
+            // Efficiency: Do not further process if the board is invalid, for example: two shapes with the same area share an edge
+            if (verify_intermediate_board(board)) {
+                solve(board, hints);
+            }
+            // Notice that we may overwrite the hint, or may overwrite squares that have the same target, simplest way is to restore the board from a copy
+            board = board_copy;
+            continue;
+        }
+        assert (shape.size() <= target);
+
+        for (const COORD_T& coord : shape) {
+            // Efficiency: Ensure we grow the size of the intermediate shape
+            bool is_in;
+            is_in = shape.find({coord.y - 1, coord.x}) != shape.end();
+            if (coord.y - 1 >= 0 && (board[coord.y - 1][coord.x] == E || board[coord.y - 1][coord.x] == target) && ! is_in) {
+                std::set<COORD_T> new_shape = shape; new_shape.insert({coord.y - 1, coord.x}); shapes.push_back(new_shape);
+            }
+            is_in = shape.find({coord.y + 1, coord.x}) != shape.end();
+            if (coord.y + 1 < board.size() && (board[coord.y + 1][coord.x] == E || board[coord.y + 1][coord.x] == target) && ! is_in) {
+                std::set<COORD_T> new_shape = shape; new_shape.insert({coord.y + 1, coord.x}); shapes.push_back(new_shape);
+            }
+            is_in = shape.find({coord.y, coord.x - 1}) != shape.end();
+            if (coord.x - 1 >= 0 && (board[coord.y][coord.x - 1] == E || board[coord.y][coord.x - 1] == target) && ! is_in) {
+                std::set<COORD_T> new_shape = shape; new_shape.insert({coord.y, coord.x - 1}); shapes.push_back(new_shape);
+            }
+            is_in = shape.find({coord.y, coord.x + 1}) != shape.end();
+            if (coord.x + 1 < board[coord.y].size() && (board[coord.y][coord.x + 1] == E || board[coord.y][coord.x + 1] == target) && ! is_in) {
+                std::set<COORD_T> new_shape = shape; new_shape.insert({coord.y, coord.x + 1}); shapes.push_back(new_shape);
+            }
+        }
+    }
+}
+
+
 bool solve(std::vector<std::vector<int>>& board, std::deque<HINT_T>& hints) {
     // Print progress
     // static int best = std::numeric_limits<int>::max();
@@ -128,58 +187,7 @@ bool solve(std::vector<std::vector<int>>& board, std::deque<HINT_T>& hints) {
     }
     hint = hints.front(); hints.pop_front();
 
-    std::set<std::set<COORD_T>> prev_shapes;
-
-    // Generate all polyominoes/shapes with size "target"
-    std::deque<std::set<COORD_T>> shapes; shapes.push_back({{hint.coord.y, hint.coord.x}});
-    while (! shapes.empty()) {
-        std::set<COORD_T> shape = shapes.front(); shapes.pop_front();
-
-        // Efficiency: Ensure this is not just permutation of the previous shapes
-        bool is_in = prev_shapes.find(shape) != prev_shapes.end();
-        if (is_in) {
-            continue;
-        }
-        prev_shapes.insert(shape);
-
-        if (shape.size() == hint.target) {
-            // We have achieved the target polyomino/shape size!
-            // Proceed to the next hint
-            std::vector<std::vector<int>> board_copy = board;
-            for (const COORD_T& coord : shape) {
-                board[coord.y][coord.x] = hint.target;
-            }
-            // Efficiency: Do not further process if the board is invalid, for example: two shapes with the same area share an edge
-            if (verify_intermediate_board(board)) {
-                solve(board, hints);
-            }
-            // Notice that we may overwrite the hint, or may overwrite squares that have the same target, simplest way is to restore the board from a copy
-            board = board_copy;
-            continue;
-        }
-        assert (shape.size() <= hint.target);
-
-        for (const COORD_T& coord : shape) {
-            // Efficiency: Ensure we grow the size of the intermediate shape
-            bool is_in;
-            is_in = shape.find({coord.y - 1, coord.x}) != shape.end();
-            if (coord.y - 1 >= 0 && (board[coord.y - 1][coord.x] == E || board[coord.y - 1][coord.x] == hint.target) && ! is_in) {
-                std::set<COORD_T> new_shape = shape; new_shape.insert({coord.y - 1, coord.x}); shapes.push_back(new_shape);
-            }
-            is_in = shape.find({coord.y + 1, coord.x}) != shape.end();
-            if (coord.y + 1 < board.size() && (board[coord.y + 1][coord.x] == E || board[coord.y + 1][coord.x] == hint.target) && ! is_in) {
-                std::set<COORD_T> new_shape = shape; new_shape.insert({coord.y + 1, coord.x}); shapes.push_back(new_shape);
-            }
-            is_in = shape.find({coord.y, coord.x - 1}) != shape.end();
-            if (coord.x - 1 >= 0 && (board[coord.y][coord.x - 1] == E || board[coord.y][coord.x - 1] == hint.target) && ! is_in) {
-                std::set<COORD_T> new_shape = shape; new_shape.insert({coord.y, coord.x - 1}); shapes.push_back(new_shape);
-            }
-            is_in = shape.find({coord.y, coord.x + 1}) != shape.end();
-            if (coord.x + 1 < board[coord.y].size() && (board[coord.y][coord.x + 1] == E || board[coord.y][coord.x + 1] == hint.target) && ! is_in) {
-                std::set<COORD_T> new_shape = shape; new_shape.insert({coord.y, coord.x + 1}); shapes.push_back(new_shape);
-            }
-        }
-    }
+    explore_shapes(board, hints, hint.coord, hint.target);
 
     hints.push_front(hint);
     return false;

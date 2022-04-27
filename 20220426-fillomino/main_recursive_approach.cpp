@@ -44,7 +44,7 @@ void print_board(const std::vector<std::vector<int>>& board) {
 
 
 void count_shape(const std::vector<std::vector<int>>& board, int target, COORD_T coord, std::set<COORD_T>& shape) {
-    // Count the area of the polyomino/shape on coordinate (y, x)
+    // Count the area of the polyomino/shape at coordinate (y, x)
     // Output: shape.size()
     if (coord.y < 0 || coord.x < 0 || coord.y >= board.size() || coord.x >= board[0].size()) {
         return;
@@ -66,7 +66,6 @@ void count_shape(const std::vector<std::vector<int>>& board, int target, COORD_T
 
 bool verify_final_board(const std::vector<std::vector<int>>& _board) {
     // Rules: https://www.gmpuzzles.com/blog/fillomino-rules-and-info/
-    // We create a copy first so we don't overwrite the board
     std::vector<std::vector<int>> board = _board;
     // Fill in the E
     for (int i = 0; i < board.size(); i++) {
@@ -113,7 +112,7 @@ bool verify_intermediate_board(const std::vector<std::vector<int>>& board) {
 bool solve(std::vector<std::vector<int>>& board, std::deque<HINT_T>& hints);
 
 
-void explore_shape(std::vector<std::vector<int>>& board, std::deque<HINT_T>& hints, int target, const std::set<COORD_T>& intermediate_shape, std::set<std::set<COORD_T>>& all_prev_shapes) {
+void explore_shapes(std::vector<std::vector<int>>& board, std::deque<HINT_T>& hints, int target, const std::set<COORD_T>& intermediate_shape, std::set<std::set<COORD_T>>& all_prev_shapes) {
     // This function generates all possible polyominoes/shapes with size "target". Will call solve() for each polyomino/shape to proceed with the next hint.
     if (intermediate_shape.size() == target) {
         // We have achieved the target polyomino/shape size!
@@ -146,22 +145,22 @@ void explore_shape(std::vector<std::vector<int>>& board, std::deque<HINT_T>& hin
         is_in = intermediate_shape.find({coord.y - 1, coord.x}) != intermediate_shape.end();
         if (coord.y - 1 >= 0 && (board[coord.y - 1][coord.x] == E || board[coord.y - 1][coord.x] == target) && ! is_in) {
             std::set<COORD_T> next_intermediate_shape = intermediate_shape; next_intermediate_shape.insert({coord.y - 1, coord.x});
-            explore_shape(board, hints, target, next_intermediate_shape, all_prev_shapes);
+            explore_shapes(board, hints, target, next_intermediate_shape, all_prev_shapes);
         }
         is_in = intermediate_shape.find({coord.y + 1, coord.x}) != intermediate_shape.end();
         if (coord.y + 1 < board.size() && (board[coord.y + 1][coord.x] == E || board[coord.y + 1][coord.x] == target) && ! is_in) {
             std::set<COORD_T> next_intermediate_shape = intermediate_shape; next_intermediate_shape.insert({coord.y + 1, coord.x});
-            explore_shape(board, hints, target, next_intermediate_shape, all_prev_shapes);
+            explore_shapes(board, hints, target, next_intermediate_shape, all_prev_shapes);
         }
         is_in = intermediate_shape.find({coord.y, coord.x - 1}) != intermediate_shape.end();
         if (coord.x - 1 >= 0 && (board[coord.y][coord.x - 1] == E || board[coord.y][coord.x - 1] == target) && ! is_in) {
             std::set<COORD_T> next_intermediate_shape = intermediate_shape; next_intermediate_shape.insert({coord.y, coord.x - 1});
-            explore_shape(board, hints, target, next_intermediate_shape, all_prev_shapes);
+            explore_shapes(board, hints, target, next_intermediate_shape, all_prev_shapes);
         }
         is_in = intermediate_shape.find({coord.y, coord.x + 1}) != intermediate_shape.end();
         if (coord.x + 1 < board[coord.y].size() && (board[coord.y][coord.x + 1] == E || board[coord.y][coord.x + 1] == target) && ! is_in) {
             std::set<COORD_T> next_intermediate_shape = intermediate_shape; next_intermediate_shape.insert({coord.y, coord.x + 1});
-            explore_shape(board, hints, target, next_intermediate_shape, all_prev_shapes);
+            explore_shapes(board, hints, target, next_intermediate_shape, all_prev_shapes);
         }
     }
 }
@@ -187,7 +186,7 @@ bool solve(std::vector<std::vector<int>>& board, std::deque<HINT_T>& hints) {
     hint = hints.front(); hints.pop_front();
 
     std::set<std::set<COORD_T>> all_prev_shapes;
-    explore_shape(board, hints, hint.target, {hint.coord}, all_prev_shapes);
+    explore_shapes(board, hints, hint.target, {hint.coord}, all_prev_shapes);
 
     hints.push_front(hint);
     return false;
