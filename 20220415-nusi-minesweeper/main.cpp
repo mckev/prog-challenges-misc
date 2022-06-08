@@ -1,6 +1,7 @@
 // Minesweeper Board : https://twitter.com/PuzzleKlasik/status/1514876219510206467
 // My article (solution) : https://medium.com/@mckev/combinations-e10a834e8c94
 
+#include <cassert>
 #include <iostream>
 #include <queue>
 #include <vector>
@@ -41,9 +42,8 @@ std::vector<std::vector<T>> combinations(const std::vector<T>& p, int r) {
                 std::vector<int> el_new = el; el_new.push_back(i);
                 queue.push(el_new);
             }
-        } else {
-            throw std::runtime_error("Should not happen!");
         }
+        assert(el.size() <= r);
     }
     return output;
 }
