@@ -14,7 +14,7 @@ class Solution {
                 if (text1[start1] == text2[start2]) {
                     // Case character is same at text1[start1] and text2[start2], then we take it. There's no reason for us to skip
                     cache[start1][start2] = 1 + cache[start1 + 1][start2 + 1];
-        } else {
+                } else {
                     // Case character is different. We either skip a character from text1, or skip a character from text2.
                     cache[start1][start2] = std::max(cache[start1 + 1][start2], cache[start1][start2 + 1]);
                 }
