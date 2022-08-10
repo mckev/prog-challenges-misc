@@ -7,11 +7,11 @@
 
 class Solution {
 public:
-    const int NA = -1;
     int coinChange(std::vector<int>& coins, int target) {
+        const int NA = -1;
         std::array<int, 10000 + 1> minCoins; minCoins.fill(NA); minCoins[0] = 0;
         for (int i = 0; i <= target; i++) {
-            if (i > 0 && minCoins[i] == NA) continue;           // there is no path to "i", however if i == 0 let it proceed to initialize
+            if (minCoins[i] == NA) continue;                    // there is no path to "i"
             for (int coin : coins) {
                 if (i > 10000 - coin) continue;                 // prevent array out of bound
                 minCoins[i + coin] = minCoins[i + coin] == NA ? minCoins[i] + 1 : std::min(minCoins[i + coin], minCoins[i] + 1);
