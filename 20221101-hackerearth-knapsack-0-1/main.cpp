@@ -1,53 +1,57 @@
 // https://www.hackerearth.com/problem/algorithm/01-knapsack-problem-5a88b815/
 
-#include <algorithm>
-#include <deque>
 #include <iostream>
 #include <map>
+#include <queue>
+#include <set>
 #include <vector>
 
 struct Item {
     int value;
     int weight;
+    bool operator<(const Item& other) const {
+        // The most valuable first
+        int value_reversed = -value, other_value_reversed = -other.value;
+        // We need to compare all elements, otherwise "set" will consider them the same
+        return std::tie(value_reversed, weight) < std::tie(other_value_reversed, other.weight);
+    }
 };
 
 int solve(int C, const std::vector<Item>& items) {
     // Transform items into map of weight
-    std::map<int, std::deque<int>> items_weights;
-    for (int index = 0; index < items.size(); index++) {
-        items_weights[items[index].weight].push_back(index);
-    }
-    // For each weight sort the items by its value, the most valuable first
-    for (auto& [weight, items_weight] : items_weights) {
-        std::sort(items_weight.begin(), items_weight.end(), [items](const int& a, const int& b) -> bool {
-            return items[a].value > items[b].value;
-        });
+    std::map<int, std::set<Item>> items_weights;
+    for (const Item& item : items) {
+        items_weights[item.weight].insert(item);    // We use "set" to sort items by their value. Gotcha: Cannot have items with same value and weight.
     }
     // Traverse the total weight from 0 to C
-    // We use the feature of "map" that always have its key sorted
+    int max_value = 0;
     struct Queue {
         int cur_value;
-        std::map<int, std::deque<int>> items_weights;
+        int cur_weight;
+        std::map<int, std::set<Item>> items_weights;
+        bool operator<(const Queue& other) const {
+            // Priority Queue sorted by highest first
+            // Smaller weight first
+            int cur_weight_reversed = -cur_weight, other_cur_weight_reversed = -other.cur_weight;
+            return std::tie(cur_weight_reversed, cur_value) < std::tie(other_cur_weight_reversed, other.cur_value);
+        }
     };
-    std::map<int, Queue> queues;
-    queues[0] = { 0, items_weights };
-    int max_value = 0;
+    std::priority_queue<Queue> queues;
+    queues.push({ 0, 0, items_weights });
+    int prev_weight = -1;
     while (! queues.empty()) {
-        int cur_weight = queues.begin()->first; Queue queue = queues[cur_weight]; queues.erase(cur_weight);
-        if (cur_weight > C) break;
+        Queue queue = queues.top(); queues.pop();
+        if (queue.cur_weight > C) break;
+        if (queue.cur_weight == prev_weight) continue; prev_weight = queue.cur_weight;  // Skip all other items configurations that has same weight (only process the first one that has highest overall value)
         max_value = std::max(max_value, queue.cur_value);
         for (const auto& [weight, items_weight] : queue.items_weights) {
-            // Only consider the most valuable item (i.e. front()) of each weight
+            // Only consider the most valuable item from each weight
             if (items_weight.empty()) continue;
-            std::map<int, std::deque<int>> next_items_weights = queue.items_weights;
-            int next_weight = cur_weight + weight;
-            int next_value = queue.cur_value + items[next_items_weights[weight].front()].value;
-            next_items_weights[weight].pop_front();
-
-            bool is_in = queues.find(next_weight) != queues.end();
-            if (!is_in || queues[next_weight].cur_value < next_value) {
-                queues[next_weight] = { next_value, next_items_weights };
-            }
+            Item most_valuable_item_of_a_weight = *(items_weight.begin());
+            int next_value = queue.cur_value + most_valuable_item_of_a_weight.value;
+            int next_weight = queue.cur_weight + most_valuable_item_of_a_weight.weight;
+            std::map<int, std::set<Item>> next_items_weights = queue.items_weights; next_items_weights[weight].erase(most_valuable_item_of_a_weight);
+            queues.push({ next_value, next_weight, next_items_weights });
         }
     }
     return max_value;
