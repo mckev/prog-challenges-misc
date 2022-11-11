@@ -1,3 +1,5 @@
+// https://codingcompetitions.withgoogle.com/codejam/round/0000000000877ba5/0000000000aa8e9c
+
 #include <iostream>
 
 std::string solve(const std::string& S) {
