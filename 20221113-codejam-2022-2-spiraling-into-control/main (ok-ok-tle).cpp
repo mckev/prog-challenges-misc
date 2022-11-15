@@ -20,32 +20,7 @@ std::vector<Coord> clockwise = {
 const int EMPTY = -1;
 
 
-std::vector<Coord> walk_in_spiral(int N) {
-    std::vector<Coord> output;
-    // Walk right N - 1, then walk down N - 1, then walk left N - 1, then
-    // walk up N - 2, then walk right N - 2, then
-    // walk down N - 3, then walk left N - 3, then
-    Coord cur_coord = {0, 0};
-    int cur_direction = 0;
-    int num_sides = 3;
-    int len_side = N - 1;
-    while (len_side > 0) {
-        for (int side = 0; side < num_sides; side++) {
-            for (int i = 0; i < len_side; i++) {
-                output.push_back(cur_coord);
-                cur_coord = cur_coord + clockwise[cur_direction];
-            }
-            cur_direction = (cur_direction + 1) % 4;
-        }
-        num_sides = 2;
-        len_side--;
-    }
-    output.push_back(cur_coord);
-    return output;
-}
-
-
-int walk_in_shortcut(const std::vector<std::vector<int>>& board, const Coord& cur_coord) {
+int direction_to_center(const std::vector<std::vector<int>>& board, const Coord& coord) {
     /*
                             |
                         WALK DOWN
@@ -57,15 +32,15 @@ int walk_in_shortcut(const std::vector<std::vector<int>>& board, const Coord& cu
     */
     int N = board.size();
     int middle = (N - 1) / 2;
-    if (cur_coord.x == middle) {
-        if (cur_coord.y < middle) {
+    if (coord.x == middle) {
+        if (coord.y < middle) {
             return 1;   // WALK DOWN
         } else {
             return 3;   // WALK UP
         }
     }
-    if (cur_coord.y == middle) {
-        if (cur_coord.x < middle) {
+    if (coord.y == middle) {
+        if (coord.x < middle) {
             return 0;   // WALK RIGHT
         } else {
             return 2;   // WALK LEFT
@@ -80,15 +55,15 @@ int walk_in_shortcut(const std::vector<std::vector<int>>& board, const Coord& cu
               WALK UP       |     WALK LEFT
                             |
     */
-    if (cur_coord.x < middle) {
-        if (cur_coord.y < middle) {
+    if (coord.x < middle) {
+        if (coord.y < middle) {
             return 0;   // WALK RIGHT
         } else {
             return 3;   // WALK UP
         }
     }
-    if (cur_coord.x > middle) {
-        if (cur_coord.y < middle) {
+    if (coord.x > middle) {
+        if (coord.y < middle) {
             return 1;   // WALK DOWN
         } else {
             return 2;   // WALK LEFT
@@ -97,38 +72,83 @@ int walk_in_shortcut(const std::vector<std::vector<int>>& board, const Coord& cu
     assert (false);
 }
 
+std::vector<int> concat_paths_to_center(const std::vector<std::vector<int>>& board, Coord coord, std::vector<int>& paths) {
+    int N = board.size();
+    while (board[coord.y][coord.x] != N * N) {
+        int direction = direction_to_center(board, coord);
+        coord = coord + clockwise[direction];
+        paths.push_back(board[coord.y][coord.x]);
+    }
+    return paths;
+}
 
 std::vector<int> solve(int N, int K) {
     std::vector<int> paths;
+
     // Generate board
     std::vector<std::vector<int>> board(N, std::vector<int>(N, EMPTY));
-    std::vector<Coord> spiral = walk_in_spiral(N);
-    int index = 0;
-    for (const Coord& coord : spiral) {
-        index++;
-        board[coord.y][coord.x] = index;
+    int middle = (N - 1) / 2;
+    int index = 1;
+    for (int i = 0; i < middle; i++) {
+        for (int j = 0; j < N - 1 - (i * 2); j++) {
+            int y = i, x = i + j;
+            board[y][x] = index++;
+        }
+        for (int j = 0; j < N - 1 - (i * 2); j++) {
+            int y = i + j, x = N - 1 - i;
+            board[y][x] = index++;
+        }
+        for (int j = 0; j < N - 1 - (i * 2); j++) {
+            int y = N - 1 - i, x = N - 1 - j - i;
+            board[y][x] = index++;
+        }
+        for (int j = 0; j < N - 1 - (i * 2); j++) {
+            int y = N - 1 - j - i, x = i;
+            board[y][x] = index++;
+        }
     }
+    board[middle][middle] = index;
     // for (int y = 0; y < N; y++) {
     //     for (int x = 0; x < N; x++) {
     //         std::cout << board[y][x] << " ";
     //     }
     //     std::cout << std::endl;
     // }
+    // std::cout << std::endl;
 
     // Walk the spiral and observe if we can take shortcuts to the center
-    int middle = (N - 1) / 2;
-    for (const Coord& coord : spiral) {
-        paths.push_back(board[coord.y][coord.x]);
-        int distance_to_center = std::abs(coord.y - middle) + std::abs(coord.x - middle);
-        if (paths.size() + distance_to_center - 1 == K) {
-            Coord coord2 = coord;
-            while (true) {
-                int direction = walk_in_shortcut(board, coord2);
-                coord2 = coord2 + clockwise[direction];
-                paths.push_back(board[coord2.y][coord2.x]);
-                if (board[coord2.y][coord2.x] == N * N) return paths;
+    for (int i = 0; i < middle; i++) {
+        for (int j = 0; j < N - 1 - (i * 2); j++) {
+            int y = i, x = i + j;
+            paths.push_back(board[y][x]);
+            int distance_to_center = std::abs(y - middle) + std::abs(x - middle);
+            if (paths.size() + distance_to_center - 1 == K) {
+                return concat_paths_to_center(board, {y, x}, paths);
             }
-            assert (false);
+        }
+        for (int j = 0; j < N - 1 - (i * 2); j++) {
+            int y = i + j, x = N - 1 - i;
+            paths.push_back(board[y][x]);
+            int distance_to_center = std::abs(y - middle) + std::abs(x - middle);
+            if (paths.size() + distance_to_center - 1 == K) {
+                return concat_paths_to_center(board, {y, x}, paths);
+            }
+        }
+        for (int j = 0; j < N - 1 - (i * 2); j++) {
+            int y = N - 1 - i, x = N - 1 - j - i;
+            paths.push_back(board[y][x]);
+            int distance_to_center = std::abs(y - middle) + std::abs(x - middle);
+            if (paths.size() + distance_to_center - 1 == K) {
+                return concat_paths_to_center(board, {y, x}, paths);
+            }
+        }
+        for (int j = 0; j < N - 1 - (i * 2); j++) {
+            int y = N - 1 - j - i, x = i;
+            paths.push_back(board[y][x]);
+            int distance_to_center = std::abs(y - middle) + std::abs(x - middle);
+            if (paths.size() + distance_to_center - 1 == K) {
+                return concat_paths_to_center(board, {y, x}, paths);
+            }
         }
     }
     return {};
