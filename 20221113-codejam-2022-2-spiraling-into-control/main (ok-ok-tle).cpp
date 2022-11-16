@@ -20,6 +20,11 @@ std::vector<Coord> clockwise = {
 const int EMPTY = -1;
 
 
+int distance_to_center(int N, const Coord& coord) {
+    int middle = (N - 1) / 2;
+    return std::abs(coord.y - middle) + std::abs(coord.x - middle);
+}
+
 int direction_to_center(const std::vector<std::vector<int>>& board, const Coord& coord) {
     /*
                             |
@@ -92,19 +97,19 @@ std::vector<int> solve(int N, int K) {
     for (int i = 0; i < middle; i++) {
         for (int j = 0; j < N - 1 - (i * 2); j++) {
             int y = i, x = i + j;
-            board[y][x] = index++;
+            board[y][x] = index; index++;
         }
         for (int j = 0; j < N - 1 - (i * 2); j++) {
             int y = i + j, x = N - 1 - i;
-            board[y][x] = index++;
+            board[y][x] = index; index++;
         }
         for (int j = 0; j < N - 1 - (i * 2); j++) {
             int y = N - 1 - i, x = N - 1 - j - i;
-            board[y][x] = index++;
+            board[y][x] = index; index++;
         }
         for (int j = 0; j < N - 1 - (i * 2); j++) {
             int y = N - 1 - j - i, x = i;
-            board[y][x] = index++;
+            board[y][x] = index; index++;
         }
     }
     board[middle][middle] = index;
@@ -121,32 +126,28 @@ std::vector<int> solve(int N, int K) {
         for (int j = 0; j < N - 1 - (i * 2); j++) {
             int y = i, x = i + j;
             paths.push_back(board[y][x]);
-            int distance_to_center = std::abs(y - middle) + std::abs(x - middle);
-            if (paths.size() + distance_to_center - 1 == K) {
+            if (paths.size() - 1 + distance_to_center(N, {y, x}) == K) {
                 return concat_paths_to_center(board, {y, x}, paths);
             }
         }
         for (int j = 0; j < N - 1 - (i * 2); j++) {
             int y = i + j, x = N - 1 - i;
             paths.push_back(board[y][x]);
-            int distance_to_center = std::abs(y - middle) + std::abs(x - middle);
-            if (paths.size() + distance_to_center - 1 == K) {
+            if (paths.size() - 1 + distance_to_center(N, {y, x}) == K) {
                 return concat_paths_to_center(board, {y, x}, paths);
             }
         }
         for (int j = 0; j < N - 1 - (i * 2); j++) {
             int y = N - 1 - i, x = N - 1 - j - i;
             paths.push_back(board[y][x]);
-            int distance_to_center = std::abs(y - middle) + std::abs(x - middle);
-            if (paths.size() + distance_to_center - 1 == K) {
+            if (paths.size() - 1 + distance_to_center(N, {y, x}) == K) {
                 return concat_paths_to_center(board, {y, x}, paths);
             }
         }
         for (int j = 0; j < N - 1 - (i * 2); j++) {
             int y = N - 1 - j - i, x = i;
             paths.push_back(board[y][x]);
-            int distance_to_center = std::abs(y - middle) + std::abs(x - middle);
-            if (paths.size() + distance_to_center - 1 == K) {
+            if (paths.size() - 1 + distance_to_center(N, {y, x}) == K) {
                 return concat_paths_to_center(board, {y, x}, paths);
             }
         }
