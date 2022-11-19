@@ -10,6 +10,12 @@ struct Coord {
     Coord operator+(const Coord& other) const {
         return {y + other.y, x + other.x};
     }
+    Coord operator*(int n) const {
+        return {y * n, x * n};
+    }
+    bool operator!=(const Coord& other) const {
+        return !(y == other.y && x == other.x);
+    }
 };
 std::vector<Coord> clockwise = {
     {0, 1},     // RIGHT
@@ -17,147 +23,217 @@ std::vector<Coord> clockwise = {
     {0, -1},    // LEFT
     {-1, 0}     // UP
 };
-const int EMPTY = -1;
 
 
-int distance_to_center(int N, const Coord& coord) {
-    int middle = (N - 1) / 2;
-    return std::abs(coord.y - middle) + std::abs(coord.x - middle);
-}
+class WalkCenter {
+private:
+    int N;
+    Coord start_coord;
+    int start_dir;
+    int start_distance;
+    int segment_len;
+    Coord coord;
 
-int direction_to_center(const std::vector<std::vector<int>>& board, const Coord& coord) {
-    /*
-                            |
-                        WALK DOWN
-                            |
-        ---- WALK RIGHT ----+---- WALK LEFT ----
-                            |
-                         WALK UP
-                            |
-    */
-    int N = board.size();
-    int middle = (N - 1) / 2;
-    if (coord.x == middle) {
-        if (coord.y < middle) {
-            return 1;   // WALK DOWN
-        } else {
-            return 3;   // WALK UP
-        }
+public:
+    WalkCenter(int N, Coord start_coord, int start_dir, int start_distance, int segment_len, const Coord& coord) {
+        assert (N % 2 == 1);
+        this->N = N;
+        this->start_coord = start_coord;
+        this->start_dir = start_dir;
+        this->start_distance = start_distance;
+        this->segment_len = segment_len;
+        this->coord = coord;
     }
-    if (coord.y == middle) {
+
+    static int distance_to_center(int N, const Coord& coord) {
+        int middle = (N - 1) / 2;
+        return std::abs(coord.y - middle) + std::abs(coord.x - middle);
+    }
+
+    static int direction_to_center(int N, const Coord& coord) {
+        /*
+                                |
+                            WALK DOWN
+                                |
+            ---- WALK RIGHT ----+---- WALK LEFT ----
+                                |
+                            WALK UP
+                                |
+        */
+        int middle = (N - 1) / 2;
+        if (coord.x == middle) {
+            if (coord.y < middle) {
+                return 1;   // WALK DOWN
+            } else {
+                return 3;   // WALK UP
+            }
+        }
+        if (coord.y == middle) {
+            if (coord.x < middle) {
+                return 0;   // WALK RIGHT
+            } else {
+                return 2;   // WALK LEFT
+            }
+        }
+        /*
+                                |
+                WALK RIGHT      |     WALK DOWN
+                                |
+            --------------------+--------------------
+                                |
+                  WALK UP       |     WALK LEFT
+                                |
+        */
         if (coord.x < middle) {
-            return 0;   // WALK RIGHT
-        } else {
-            return 2;   // WALK LEFT
+            if (coord.y < middle) {
+                return 0;   // WALK RIGHT
+            } else {
+                return 3;   // WALK UP
+            }
         }
-    }
-    /*
-                            |
-             WALK RIGHT     |     WALK DOWN
-                            |
-        --------------------+-------------------
-                            |
-              WALK UP       |     WALK LEFT
-                            |
-    */
-    if (coord.x < middle) {
-        if (coord.y < middle) {
-            return 0;   // WALK RIGHT
-        } else {
-            return 3;   // WALK UP
+        if (coord.x > middle) {
+            if (coord.y < middle) {
+                return 1;   // WALK DOWN
+            } else {
+                return 2;   // WALK LEFT
+            }
         }
+        assert (false);
     }
-    if (coord.x > middle) {
-        if (coord.y < middle) {
-            return 1;   // WALK DOWN
-        } else {
-            return 2;   // WALK LEFT
-        }
-    }
-    assert (false);
-}
 
-std::vector<int> concat_paths_to_center(const std::vector<std::vector<int>>& board, Coord coord, std::vector<int>& paths) {
-    int N = board.size();
-    while (board[coord.y][coord.x] != N * N) {
-        int direction = direction_to_center(board, coord);
-        coord = coord + clockwise[direction];
-        paths.push_back(board[coord.y][coord.x]);
+    static const int NOT_IN_SEGMENT = -1;
+    static int distance_in_segment(const Coord& start_coord, const Coord& end_coord, const Coord& coord) {
+        if (start_coord.y == end_coord.y && start_coord.y == coord.y) {
+            return std::abs(coord.x - start_coord.x);
+        } else if (start_coord.x == end_coord.x && start_coord.x == coord.x) {
+            return std::abs(coord.y - start_coord.y);
+        } else {
+            // coord is on different segment
+            return NOT_IN_SEGMENT;
+        }
     }
-    return paths;
-}
+
+    int walk() {
+        int direction = direction_to_center(N, coord);
+        coord = coord + clockwise[direction];
+
+        // Calculate board[coord.y][coord.x]
+        while (true) {
+            Coord end_coord = start_coord + clockwise[start_dir] * std::max(0, segment_len - 1);
+            int distance_in_segment = WalkCenter::distance_in_segment(start_coord, end_coord, coord);
+            if (distance_in_segment != NOT_IN_SEGMENT) {
+                int index = start_distance + distance_in_segment + 1;
+                return index;
+            }
+            // Next segment
+            start_distance += segment_len;
+            if (start_dir < 3) {
+                // Case RIGHT, DOWN, LEFT
+                start_coord = end_coord + clockwise[start_dir];
+                start_dir = (start_dir + 1) % 4;
+            } else {
+                // Case UP
+                start_dir = (start_dir + 1) % 4;
+                start_coord = end_coord + clockwise[start_dir];
+                segment_len -= 2;
+            }
+        }
+    }
+};
+
+
+class WalkSpiral {
+private:
+    int N, K;
+    Coord start_coord;
+    int start_dir;
+    int start_distance;
+    int segment_len;
+
+public:
+    WalkSpiral(int N, int K) {
+        assert (N % 2 == 1);
+        this->N = N;
+        this->K = K;
+        this->start_coord = {0, 0};
+        this->start_dir = 0;
+        this->start_distance = 0;
+        this->segment_len = N - 1;
+    }
+
+    std::vector<int> answer;
+
+    bool walk_segment() {
+        Coord mid_coord = start_coord + clockwise[start_dir] * (segment_len / 2);
+        Coord end_coord = start_coord + clockwise[start_dir] * std::max(0, segment_len - 1);
+        assert (segment_len >= 0);
+        assert (start_coord.y >= 0); assert (start_coord.x >= 0); assert (start_coord.y < N); assert (start_coord.x < N);
+        assert (end_coord.y >= 0); assert (end_coord.x >= 0); assert (end_coord.y < N); assert (end_coord.x < N);
+        // std::cout << "Segment: (" << start_coord.y << ", " << start_coord.x << ") - (" << end_coord.y << ", " << end_coord.x << ")" << std::endl;
+
+        if (
+            (start_distance + WalkCenter::distance_to_center(N, start_coord) <= K && K <= start_distance + segment_len / 2 + WalkCenter::distance_to_center(N, mid_coord)) ||
+            (start_distance + segment_len / 2 + WalkCenter::distance_to_center(N, mid_coord) <= K && K <= start_distance + segment_len - 1 + WalkCenter::distance_to_center(N, end_coord))
+           ) {
+            int distance = 0;
+            for (Coord coord = start_coord; coord != end_coord + clockwise[start_dir]; coord = coord + clockwise[start_dir], distance++) {
+                // std::cout << "Traversing (" << coord.y << ", " << coord.x << "). Distance: " << start_distance + distance << "." << std::endl;
+                if (start_distance + distance + WalkCenter::distance_to_center(N, coord) == K) {
+                    int index = start_distance + distance + 1; answer.push_back(index);
+                    WalkCenter walk_center = WalkCenter(N, start_coord, start_dir, start_distance, segment_len, coord);
+                    while (true) {
+                        index = walk_center.walk(); answer.push_back(index);
+                        if (index == N * N) break;
+                    }
+                    // We have found the answer!
+                    return false;
+                }
+            }
+        }
+
+        if (segment_len == 0) {
+            // We have reached center!
+            return false;
+        }
+
+        // Next segment
+        start_distance += segment_len;
+        if (start_dir < 3) {
+            // Case RIGHT, DOWN, LEFT
+            start_coord = end_coord + clockwise[start_dir];
+            start_dir = (start_dir + 1) % 4;
+        } else {
+            // Case UP
+            start_dir = (start_dir + 1) % 4;
+            start_coord = end_coord + clockwise[start_dir];
+            segment_len -= 2;
+        }
+        return true;
+    }
+};
+
 
 std::vector<int> solve(int N, int K) {
-    std::vector<int> paths;
-
-    // Generate board
-    std::vector<std::vector<int>> board(N, std::vector<int>(N, EMPTY));
-    int middle = (N - 1) / 2;
-    int index = 1;
-    for (int i = 0; i < middle; i++) {
-        for (int j = 0; j < N - 1 - (i * 2); j++) {
-            int y = i, x = i + j;
-            board[y][x] = index; index++;
-        }
-        for (int j = 0; j < N - 1 - (i * 2); j++) {
-            int y = i + j, x = N - 1 - i;
-            board[y][x] = index; index++;
-        }
-        for (int j = 0; j < N - 1 - (i * 2); j++) {
-            int y = N - 1 - i, x = N - 1 - j - i;
-            board[y][x] = index; index++;
-        }
-        for (int j = 0; j < N - 1 - (i * 2); j++) {
-            int y = N - 1 - j - i, x = i;
-            board[y][x] = index; index++;
-        }
-    }
-    board[middle][middle] = index;
-    // for (int y = 0; y < N; y++) {
-    //     for (int x = 0; x < N; x++) {
-    //         std::cout << board[y][x] << " ";
-    //     }
-    //     std::cout << std::endl;
-    // }
-    // std::cout << std::endl;
-
-    // Walk the spiral and observe if we can take shortcuts to the center
-    for (int i = 0; i < middle; i++) {
-        for (int j = 0; j < N - 1 - (i * 2); j++) {
-            int y = i, x = i + j;
-            paths.push_back(board[y][x]);
-            if (paths.size() - 1 + distance_to_center(N, {y, x}) == K) {
-                return concat_paths_to_center(board, {y, x}, paths);
-            }
-        }
-        for (int j = 0; j < N - 1 - (i * 2); j++) {
-            int y = i + j, x = N - 1 - i;
-            paths.push_back(board[y][x]);
-            if (paths.size() - 1 + distance_to_center(N, {y, x}) == K) {
-                return concat_paths_to_center(board, {y, x}, paths);
-            }
-        }
-        for (int j = 0; j < N - 1 - (i * 2); j++) {
-            int y = N - 1 - i, x = N - 1 - j - i;
-            paths.push_back(board[y][x]);
-            if (paths.size() - 1 + distance_to_center(N, {y, x}) == K) {
-                return concat_paths_to_center(board, {y, x}, paths);
-            }
-        }
-        for (int j = 0; j < N - 1 - (i * 2); j++) {
-            int y = N - 1 - j - i, x = i;
-            paths.push_back(board[y][x]);
-            if (paths.size() - 1 + distance_to_center(N, {y, x}) == K) {
-                return concat_paths_to_center(board, {y, x}, paths);
-            }
-        }
-    }
-    return {};
+    WalkSpiral walk_spiral = WalkSpiral(N, K);
+    while (walk_spiral.walk_segment()) {};
+    return walk_spiral.answer;
 }
 
+
+// void test() {
+//     {
+//         std::vector<int> paths = solve(9, 10);
+//     }
+//     {
+//         std::vector<int> paths = solve(9, 18);
+//     }
+// }
+
+
 int main() {
+    // test();
+
     int T;
-    // std::vector<int> paths = solve(9, 10);
     std::cin >> T;
     for (int t = 0; t < T; t++) {
         int N; std::cin >> N;
