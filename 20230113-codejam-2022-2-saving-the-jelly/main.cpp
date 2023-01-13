@@ -1,3 +1,4 @@
+// Google Code Jam 2022 Round 2 : Saving the Jelly
 // https://codingcompetitions.withgoogle.com/codejam/round/00000000008778ec/0000000000b158f8
 
 #include <algorithm>
@@ -96,18 +97,22 @@ void test_bipartite_match() {
     assert (bpm.q == expected_q);
 }
 
+
 struct Coord {
     int x, y;
-};
-
-struct AnswerStruct {
-    int child_no;
-    int sweet_no;
 };
 
 double distance(const Coord& coord1, const Coord& coord2) {
     return std::pow(coord1.x - coord2.x, 2) + std::pow(coord1.y - coord2.y, 2);
 }
+
+struct AnswerStruct {
+    int child_no;
+    int sweet_no;
+    bool operator==(const AnswerStruct& other) const {
+        return std::tie(child_no, sweet_no) == std::tie(other.child_no, other.sweet_no);
+    }
+};
 
 std::vector<AnswerStruct> solve(int N, const std::vector<Coord>& pos_childs, const std::vector<Coord>& pos_sweets) {
     std::vector<AnswerStruct> answer;
@@ -126,8 +131,7 @@ std::vector<AnswerStruct> solve(int N, const std::vector<Coord>& pos_childs, con
         // IMPOSSIBLE
         return answer;
     }
-    // Generate sweet_pair
-    // It's one sweet to one child, however it's not necessarily the closest
+    // sweet_pair : One sweet to one child, however it's not necessarily the closest
     std::map<int, int> sweet_pair;
     assert (bpm.q.size() == N + 1);
     for (int sweet_no = 0; sweet_no < N + 1; sweet_no++) {
@@ -135,8 +139,7 @@ std::vector<AnswerStruct> solve(int N, const std::vector<Coord>& pos_childs, con
         if (child_no == -1) continue;
         sweet_pair[sweet_no] = child_no;
     }
-    // Generate child_pairs
-    // It's one child to many sweets, sorted by its distance (furthest sweet first)
+    // child_pairs : One child to many sweets, sorted by its distance (closest sweet last)
     std::map<int, std::vector<int>> child_pairs;
     for (int child_no = 0; child_no < N; child_no++) {
         double distance_to_sweet0 = distance(pos_childs[child_no], pos_sweets[0]);
@@ -149,50 +152,52 @@ std::vector<AnswerStruct> solve(int N, const std::vector<Coord>& pos_childs, con
             return distance(pos_childs[child_no], pos_sweets[sweet1_no]) > distance(pos_childs[child_no], pos_sweets[sweet2_no]);
         });
     }
-    while (child_pairs.size() > 0) {
-        // Find alternate path
+    while (! child_pairs.empty()) {
+        // Find alternate path to make sure there will always be a child with their closest sweet in the graph
         {
             std::deque<int> path;
             std::set<int> path_set;
             int child_no = (*(child_pairs.begin())).first;
-            while (true) {
-                int closest_sweet_no = child_pairs[child_no].back();
+            bool is_in = false;
+            while (! is_in) {
+                // Find a unicyclic graph
                 path.push_back(child_no);
                 path_set.insert(child_no);
+                int closest_sweet_no = child_pairs[child_no].back();
                 child_no = sweet_pair[closest_sweet_no];
-                bool is_in = path_set.find(child_no) != path_set.end();
-                if (is_in) break;
+                is_in = path_set.find(child_no) != path_set.end();
             }
             while (path.front() != child_no) path.pop_front();
-            for (int child_no : path) {
+            for (const int& child_no : path) {
                 int closest_sweet_no = child_pairs[child_no].back();
                 sweet_pair[closest_sweet_no] = child_no;
             }
         }
-        // Remove child and their closest sweet which are in the graph
-        for (auto it = child_pairs.begin(); it != child_pairs.end(); ) {
-            int child_no = (*it).first;
-            int closest_sweet_no = (*it).second.back();
-            if (sweet_pair[closest_sweet_no] == child_no) {
-                answer.push_back({child_no, closest_sweet_no});
-                {
-                    // Remove the existence of the child and the sweet
-                    sweet_pair.erase(closest_sweet_no);
-                    it = child_pairs.erase(it);
-                    for (auto& kv : child_pairs) {
-                        std::vector<int> sweets = kv.second;
-                        std::vector<int> new_sweets;
-                        std::copy_if(sweets.begin(), sweets.end(), std::back_inserter(new_sweets), [closest_sweet_no](int i){return i != closest_sweet_no;});
-                        kv.second = new_sweets;
-                    }
-                }
-            } else {
-                it++;
+        // Remove childs and their closest sweets if they are in the graph
+        std::vector<int> remaining_childs;
+        for (const auto& kv : child_pairs) {
+            remaining_childs.push_back(kv.first);
+        }
+        for (const int& child_no : remaining_childs) {
+            int closest_sweet_no = child_pairs[child_no].back();
+            if (sweet_pair[closest_sweet_no] != child_no) {
+                continue;
+            }
+            answer.push_back({child_no, closest_sweet_no});
+            // Remove the existence of the child and the sweet
+            sweet_pair.erase(closest_sweet_no);
+            child_pairs.erase(child_no);
+            for (auto& kv : child_pairs) {
+                std::vector<int> sweets = kv.second;
+                std::vector<int> new_sweets;
+                std::copy_if(sweets.begin(), sweets.end(), std::back_inserter(new_sweets), [closest_sweet_no](int i){return i != closest_sweet_no;});
+                kv.second = new_sweets;
             }
         }
     }
     return answer;
 }
+
 
 // void test() {
 //     {
@@ -206,9 +211,15 @@ std::vector<AnswerStruct> solve(int N, const std::vector<Coord>& pos_childs, con
 //             {-1, -1},
 //             {-2, 1}
 //         };
-//         solve(N, pos_childs, pos_sweets);
+//         std::vector<AnswerStruct> answer = solve(N, pos_childs, pos_sweets);
+//         std::vector<AnswerStruct> expected = {
+//             {0, 2},
+//             {1, 1}
+//         };
+//         assert (answer == expected);
 //     }
 // }
+
 
 int main() {
     // test_bipartite_match();
