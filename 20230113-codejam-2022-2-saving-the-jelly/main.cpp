@@ -11,7 +11,7 @@
 #include <vector>
 
 
-struct bipartite_match {
+struct BipartiteMatch {
     // Ref: https://judge.yosupo.jp/submission/1548
     // if (~a) is equal to: if (a != -1)
     // if (!~a) is equal to: if (a == -1)
@@ -20,7 +20,7 @@ struct bipartite_match {
     std::vector<int> pre, root;
     std::vector<std::vector<int>> to;
 
-    bipartite_match(int _n, int _m) {
+    BipartiteMatch(int _n, int _m) {
         n = _n;
         m = _m;
         p = std::vector<int>(n, -1);
@@ -79,7 +79,7 @@ struct bipartite_match {
 void test_bipartite_match() {
     // https://www.geeksforgeeks.org/maximum-bipartite-matching/
     int n = 6, m = 6;
-    bipartite_match bpm(n, m);
+    BipartiteMatch bpm(n, m);
     bpm.add(0, 1);
     bpm.add(0, 2);
     bpm.add(2, 0);
@@ -100,30 +100,29 @@ void test_bipartite_match() {
 
 struct Coord {
     int x, y;
+    static double dist(const Coord& coord1, const Coord& coord2) {
+        return std::pow(coord1.x - coord2.x, 2) + std::pow(coord1.y - coord2.y, 2);
+    }
 };
 
-double dist(const Coord& coord1, const Coord& coord2) {
-    return std::pow(coord1.x - coord2.x, 2) + std::pow(coord1.y - coord2.y, 2);
-}
-
-struct AnswerT {
+struct Answer {
     int child;
     int sweet;
-    bool operator==(const AnswerT& other) const {
+    bool operator==(const Answer& other) const {
         return std::tie(child, sweet) == std::tie(other.child, other.sweet);
     }
 };
 
-std::vector<AnswerT> solve(int N, const std::vector<Coord>& pos_childs, const std::vector<Coord>& pos_sweets) {
-    std::vector<AnswerT> answer;
+std::vector<Answer> solve(int N, const std::vector<Coord>& pos_childs, const std::vector<Coord>& pos_sweets) {
+    std::vector<Answer> answer;
     assert (pos_childs.size() == N);
     assert (pos_sweets.size() == N + 1);
     // Bipartite match
-    bipartite_match bpm(N, N + 1);
+    BipartiteMatch bpm(N, N + 1);
     for (int child = 0; child < N; child++) {
-        double dist_to_sweet0 = dist(pos_childs[child], pos_sweets[0]);
+        double dist_to_sweet0 = Coord::dist(pos_childs[child], pos_sweets[0]);
         for (int sweet = 1; sweet < N + 1; sweet++) {
-            double dist_to_sweet = dist(pos_childs[child], pos_sweets[sweet]);
+            double dist_to_sweet = Coord::dist(pos_childs[child], pos_sweets[sweet]);
             if (dist_to_sweet > dist_to_sweet0) continue;
             bpm.add(child, sweet);
         }
@@ -141,18 +140,18 @@ std::vector<AnswerT> solve(int N, const std::vector<Coord>& pos_childs, const st
         if (child == -1) continue;
         sweet_edge[sweet] = child;
     }
-    // child_edges : One child to many sweets, sorted by its dist (closest sweet last)
+    // child_edges : One child to many sweets, sorted by its distance (closest sweet last)
     std::map<int, std::vector<int>> child_edges;
     for (int child = 0; child < N; child++) {
-        double dist_to_sweet0 = dist(pos_childs[child], pos_sweets[0]);
+        double dist_to_sweet0 = Coord::dist(pos_childs[child], pos_sweets[0]);
         for (int sweet = 1; sweet < N + 1; sweet++) {
-            double dist_to_sweet = dist(pos_childs[child], pos_sweets[sweet]);
+            double dist_to_sweet = Coord::dist(pos_childs[child], pos_sweets[sweet]);
             if (dist_to_sweet > dist_to_sweet0) continue;
             child_edges[child].push_back(sweet);
         }
         Coord pos_child = pos_childs[child];
         std::sort(child_edges[child].begin(), child_edges[child].end(), [pos_child, pos_sweets](int sweet1_no, int sweet2_no) -> bool {
-            return dist(pos_child, pos_sweets[sweet1_no]) > dist(pos_child, pos_sweets[sweet2_no]);
+            return Coord::dist(pos_child, pos_sweets[sweet1_no]) > Coord::dist(pos_child, pos_sweets[sweet2_no]);
         });
     }
     while (! child_edges.empty()) {
@@ -215,8 +214,8 @@ void test() {
             {-1, -1},
             {-2, 1}
         };
-        std::vector<AnswerT> answer = solve(N, pos_childs, pos_sweets);
-        std::vector<AnswerT> expected = {
+        std::vector<Answer> answer = solve(N, pos_childs, pos_sweets);
+        std::vector<Answer> expected = {
             {0, 2},
             {1, 1}
         };
@@ -244,12 +243,12 @@ int main() {
             int y; std::cin >> y;
             pos_sweets.push_back({x, y});
         }
-        std::vector<AnswerT> answer = solve(N, pos_childs, pos_sweets);
+        std::vector<Answer> answer = solve(N, pos_childs, pos_sweets);
         if (answer.empty()) {
             std::cout << "Case #" << t + 1 << ": IMPOSSIBLE" << std::endl;
         } else {
             std::cout << "Case #" << t + 1 << ": POSSIBLE" << std::endl;
-            for (const AnswerT& answer_each : answer) {
+            for (const Answer& answer_each : answer) {
                 std::cout << answer_each.child + 1 << " " << answer_each.sweet + 1 << std::endl;
             }
         }
