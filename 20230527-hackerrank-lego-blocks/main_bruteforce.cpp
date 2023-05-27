@@ -26,15 +26,15 @@ public:
     }
 
     bool is_solid_structure() {
-        for (int x = 0; x < width; x++) {
-            bool is_solid = false;
+        for (int x = 0; x < width - 1; x++) {
+            bool is_solid_vertically = false;
             for (int y = 0; y < height; y++) {
                 if (! layout[y][x]) {
-                    is_solid = true;
+                    is_solid_vertically = true;
                     break;
                 }
             }
-            if (! is_solid) {
+            if (! is_solid_vertically) {
                 return false;
             }
         }
