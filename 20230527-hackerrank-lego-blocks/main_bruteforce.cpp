@@ -9,7 +9,7 @@
 class Solution {
 private:
     int height, width;
-    std::vector<std::vector<bool>> layout;
+    std::vector<std::vector<bool>> layout;      // layout keeps track of "break" in the structure
     long long count;
 
 public:
@@ -18,10 +18,10 @@ public:
         width = m;
         layout.resize(height, std::vector<bool>(width - 1, false));
         count = 0;
-        solve(0, 0);
-        solve(0, 1);
-        solve(0, 2);
-        solve(0, 3);
+        put_lego_piece(0, 0);                   // the size of a lego piece is 1 - 4
+        put_lego_piece(0, 1);
+        put_lego_piece(0, 2);
+        put_lego_piece(0, 3);
         return count;
     }
 
@@ -41,7 +41,7 @@ public:
         return true;
     }
 
-    void solve(int h, int w) {
+    void put_lego_piece(int h, int w) {
         if (h == height - 1 && w == width - 1) {
             if (is_solid_structure()) {
                 count++;
@@ -52,18 +52,18 @@ public:
             return;
         }
         if (w == width - 1) {
-            solve(h + 1, 0);
-            solve(h + 1, 1);
-            solve(h + 1, 2);
-            solve(h + 1, 3);
+            put_lego_piece(h + 1, 0);
+            put_lego_piece(h + 1, 1);
+            put_lego_piece(h + 1, 2);
+            put_lego_piece(h + 1, 3);
             return;
         }
 
         layout[h][w] = true;
-        solve(h, w + 1);
-        solve(h, w + 2);
-        solve(h, w + 3);
-        solve(h, w + 4);
+        put_lego_piece(h, w + 1);
+        put_lego_piece(h, w + 2);
+        put_lego_piece(h, w + 3);
+        put_lego_piece(h, w + 4);
         layout[h][w] = false;
     }
 
