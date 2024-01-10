@@ -12,7 +12,7 @@ public:
         int max_sum = 0;
         std::vector<int> sums(nums.size() + 3);
         for (int i = nums.size() - 1; i >= 0; i--) {
-            sums[i] = std::max(nums[i] + sums[i + 2], nums[i] + sums[i + 3]);
+            sums[i] = nums[i] + std::max(sums[i + 2], sums[i + 3]);
             if (sums[i] > max_sum) {
                 max_sum = sums[i];
             }
