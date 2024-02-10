@@ -24,7 +24,7 @@ int calc_bulb_index(int m, int R, const std::vector<int>& bulbs, int start_index
     return index;
 }
 
-int solve(int M, int R, int N, std::vector<int> bulbs) {
+int solve(int M, int R, int N, const std::vector<int>& bulbs) {
     std::set<int> answers;
     int start_index = 0;            // to speed up
     int m = 0;
