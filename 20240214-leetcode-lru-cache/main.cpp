@@ -93,7 +93,7 @@ int main() {
         lRUCache.put(1, 1);
         lRUCache.put(4, 1);
         value = lRUCache.get(2);
-        assert(value == -1);
+        assert(value == LRUCache::NOT_FOUND);
     }
     return 0;
 }
