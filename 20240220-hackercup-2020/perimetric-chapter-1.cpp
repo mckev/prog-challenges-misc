@@ -4,6 +4,7 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#pragma GCC optimize "trapv"                                        // Detect overflow
 
 
 long long modulo(long long x) {
@@ -29,7 +30,17 @@ int solve(const std::vector<int>& L, const std::vector<int>& H, int W) {
             height_map[l] = std::max(height_map[l], H[n]);
         }
 
-        // Compute perimeter
+        // Compute perimeter (slow)
+        // long long p = 0;
+        // for (int l = 0; l < L[n] + W + 1; l++) {
+        //     int height_diff = (l > 0) ? std::abs(height_map[l] - height_map[l - 1]) : height_map[l];
+        //     p += height_diff;                                       // Changes in height
+        //     if (height_map[l] > 0) {
+        //         p += 2;                                             // Add base and top
+        //     }
+        // }
+
+        // Compute perimeter (fast)
         long long p = (L[n] > 0) ? perimeters[L[n] - 1] : 0;        // Resume from previous calculation
         if (p == 0) p = last_perimeter;                             // If the room is detached from previous, then take last perimeter value
         for (int l = L[n]; l < L[n] + W + 1; l++) {
