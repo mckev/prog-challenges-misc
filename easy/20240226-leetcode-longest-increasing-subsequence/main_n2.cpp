@@ -1,5 +1,6 @@
 // https://leetcode.com/problems/longest-increasing-subsequence/
 
+#include <algorithm>
 #include <cassert>
 #include <vector>
 
@@ -7,19 +8,18 @@
 class Solution {
 public:
     int lengthOfLIS(const std::vector<int>& nums) {
-        int answer = 1;
+        // Time Complexity: O(n^2)
         std::vector<int> lengths(nums.size(), 1);
         for (int i = 0; i < nums.size(); i++) {
             // Find an element which is on the left and lesser, that has the greatest length
             for (int j = 0; j < i; j++) {
                 if (nums[j] < nums[i]) {
-                    int length = lengths[j] + 1;
-                    answer = std::max(answer, length);
-                    lengths[i] = std::max(lengths[i], length);
+                    lengths[i] = std::max(lengths[i], lengths[j] + 1);
                 }
             }
         }
-        return answer;
+        int max_length = *std::max_element(lengths.begin(), lengths.end());
+        return max_length;
     }
 };
 
