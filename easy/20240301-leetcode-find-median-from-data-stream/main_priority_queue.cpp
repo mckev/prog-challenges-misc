@@ -23,6 +23,7 @@ public:
             if (lefts.top() > num) {
                 // Perfect!
                 lefts.push(num);
+                return;
             } else {
                 // Num must go into right-side
                 int right = rights.top(); rights.pop();
@@ -34,6 +35,7 @@ public:
             if (lefts.top() < num) {
                 // Perfect!
                 rights.push(num);
+                return;
             } else {
                 // Num must go into left-side
                 int left = lefts.top(); lefts.pop();
