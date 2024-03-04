@@ -7,7 +7,7 @@
 
 class NumArray {
 private:
-    // Range Sum using Binary Tree
+    // Range Sum using Segment Tree
     struct Node {
         int index_min, index_max;                                               // Range: [index_min, index_max)
         int sum;
