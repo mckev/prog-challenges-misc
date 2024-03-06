@@ -12,7 +12,7 @@ private:
     std::vector<int> nodes;
     const int ROOT_NODE = 0;
 
-    void construct_node(int node, int start, int end) {                         // Range: [start, end)
+    void construct_node(int node, int start, int end) {                             // Range: [start, end)
         if (start == end - 1) {
             // We are on a leaf
             nodes[node] = nums[start];
@@ -27,7 +27,7 @@ private:
         }
     }
 
-    int find_node(int node, int start, int end, const int index) {
+    int find_node(int node, int start, int end, const int index) const {
         if (start == end - 1) {
             // We are on a leaf. Yes, we found it!
             assert(start == index);
@@ -46,12 +46,20 @@ private:
         }
     }
 
-    int sum_range(int node, int start, int end, int left, int right) {
+    int sum_range(int node, int start, int end, int left, int right) const {
+        if (left >= right) return 0;
         if (left == start && right == end) {
             return nodes[node];
         }
-        if (left >= right) return 0;
         assert (start != end - 1);
+        if (right - left < 16) {
+            // Shortcut: If number of nodes are small, then directly compute
+            int sum = 0;
+            for (int i = left; i < right; i++) {
+                sum += nums[i];
+            }
+            return sum;
+        }
         int mid = (start + end) / 2;
         int left_node = node * 2 + 1;
         int right_node = node * 2 + 2;
@@ -66,6 +74,7 @@ public:
     }
 
     void update(int index, int val) {
+        nums[index] = val;
         int node = find_node(ROOT_NODE, 0, nums.size(), index);
         int delta = val - nodes[node];
         while (true) {
@@ -76,7 +85,7 @@ public:
         }
     }
 
-    int sumRange(int left, int right) {                                         // Range: [left, right]
+    int sumRange(int left, int right) const {                                       // Range: [left, right]
         return sum_range(ROOT_NODE, 0, nums.size(), left, right + 1);
     }
 };
@@ -95,7 +104,7 @@ public:
         nums[index] = val;
     }
 
-    int sumRange(int left, int right) {                                         // Range: [left, right]
+    int sumRange(int left, int right) const {                                       // Range: [left, right]
         int sum = 0;
         for (int i = left; i <= right; i++) {
             sum += nums[i];
