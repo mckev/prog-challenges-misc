@@ -1,47 +1,25 @@
 // https://leetcode.com/problems/container-with-most-water/description/
 
-#include <algorithm>
 #include <cassert>
 #include <random>
 #include <vector>
 
 
-struct Line {
-    int height;
-    int x;
-};
-
-
 class Solution {
 public:
     int maxArea(const std::vector<int>& heights) const {
-        // Create a new heights which has much lesser members
-        // Firstly create an ascending heights
-        std::vector<Line> heights_ascending;
-        for (int x = 0; x < heights.size(); x++) {
-            if (heights_ascending.size() == 0 || heights[x] > heights_ascending.back().height) {
-                heights_ascending.push_back({heights[x], x});
-            }
-        }
-        // Secondly create a descending heights
-        std::vector<Line> heights_descending;
-        for (int x = heights.size() - 1; x >= heights_ascending.back().x + 1; x--) {
-            if (heights_descending.size() == 0 || heights[x] > heights_descending.back().height) {
-                heights_descending.push_back({heights[x], x});
-            }
-        }
-        std::reverse(heights_descending.begin(), heights_descending.end());
-        // Concatenate
-        std::vector<Line> lines = heights_ascending;
-        lines.insert(lines.end(), heights_descending.begin(), heights_descending.end());
-        // Calculate
         int max_area = 0;
-        for (int i = 0; i < lines.size(); i++) {
-            for (int j = lines.size() - 1; j >= i + 1; j--) {
-                int area = std::min(lines[i].height, lines[j].height) * (lines[j].x - lines[i].x);
-                if (area > max_area) max_area = area;
-                // Speed up: Skip as the height is limited to lines[i]
-                if (lines[j].height > lines[i].height) break;
+        int i = 0;
+        int j = heights.size() - 1;
+        while (i < j) {
+            int area = std::min(heights[i], heights[j]) * (j - i);
+            if (area > max_area) max_area = area;
+            if (heights[j] > heights[i]) {
+                int prev_i = i;
+                while (i < j && heights[i] <= heights[prev_i]) i++;
+            } else {
+                int prev_j = j;
+                while (i < j && heights[j] <= heights[prev_j]) j--;
             }
         }
         return max_area;
