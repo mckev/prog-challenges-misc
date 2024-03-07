@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <deque>
 #include <random>
 #include <vector>
 
@@ -18,9 +19,15 @@ struct Price {
 class StockSpanner {
 private:
     std::vector<Price> prices;
-    int index = 0;
+    int index;
 
 public:
+    StockSpanner() {
+        index = 0;
+        prices.push_back({std::numeric_limits<int>::max(), index});
+        index++;
+    }
+
     int next(int price) {
         int span;
         // Find the first element of "prices" that is lesser or equal than "price" (as we have descending order)
@@ -30,11 +37,7 @@ public:
             span = 1;
             prices.push_back({price, index});
         } else {
-            if (lesser_equal_iterator == prices.begin()) {
-                span = index + 1;
-            } else {
-                span = index - (*(lesser_equal_iterator - 1)).index;
-            }
+            span = index - (*(lesser_equal_iterator - 1)).index;
             *lesser_equal_iterator = {price, index};
             prices.erase(lesser_equal_iterator + 1, prices.end());
         }
@@ -46,18 +49,14 @@ public:
 
 class StockSpanner2 {
 private:
-    std::vector<int> prices;
+    std::deque<int> prices;
 
 public:
     int next(int price) {
-        prices.push_back(price);
+        prices.push_front(price);
         int span = 0;
-        for (int i = prices.size() - 1; i >= 0; i--) {
-            if (prices[i] <= price) {
-                span++;
-            } else {
-                break;
-            }
+        for (int i = 0; i < prices.size() && prices[i] <= price; i++) {
+            span++;
         }
         return span;
     }
