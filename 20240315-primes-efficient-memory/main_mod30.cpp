@@ -26,13 +26,13 @@ void report(int64_t number) {
 }
 
 int main() {
-    jobs_push({7 * 5, 7});
-    jobs_push({11 * 3, 11});
-    jobs_push({13 * 3, 13});
-    jobs_push({17 * 2, 17});
-    jobs_push({19 * 2, 19});
-    jobs_push({23 * 2, 23});
-    jobs_push({29 * 2, 29});
+    jobs.push({7 * 5, 7});
+    jobs.push({11 * 3, 11});
+    jobs.push({13 * 3, 13});
+    jobs.push({17 * 2, 17});
+    jobs.push({19 * 2, 19});
+    jobs.push({23 * 2, 23});
+    jobs.push({29 * 2, 29});
     for (int64_t base_number = 30; ; base_number += 30) {
         std::vector<bool> is_primes(30, true);
         while (jobs.top().number < base_number + 30) {
