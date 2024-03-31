@@ -39,7 +39,7 @@ std::priority_queue<Job> jobs;
 
 // Excluded Primes (for speed up)
 const int EXCLUDED_PRIMES_NUM = 9;
-const std::array<int, EXCLUDED_PRIMES_NUM> excluded_primes = {2, 3, 5, 7, 11, 13, 17, 19, 23};
+constexpr std::array<int, EXCLUDED_PRIMES_NUM> excluded_primes = {2, 3, 5, 7, 11, 13, 17, 19, 23};
 constexpr int64_t compute_modulo(const std::array<int, EXCLUDED_PRIMES_NUM>& excluded_primes) {
     int64_t mod = 1;
     for (int prime : excluded_primes) {
