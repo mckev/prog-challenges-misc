@@ -78,8 +78,8 @@ int main() {
             int expected = int(rnd(mt) * N) + 1;                        // 1 <= expected <= 100000
             nums.push_back(expected);
             std::shuffle(nums.begin(), nums.end(), mt);
-            int repeat = int(rnd(mt) * N);
-            for (int i = 0; i < repeat; i++) {
+            int additional_duplicates = int(rnd(mt) * N);
+            for (int i = 0; i < additional_duplicates; i++) {
                 nums[i] = expected;
             }
             std::shuffle(nums.begin(), nums.end(), mt);
