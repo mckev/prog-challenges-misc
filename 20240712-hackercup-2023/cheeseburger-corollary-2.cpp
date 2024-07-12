@@ -1,3 +1,5 @@
+// https://www.facebook.com/codingcompetitions/hacker-cup/2023/practice-round/problems/A2
+
 #include <cassert>
 #include <iostream>
 #include <random>

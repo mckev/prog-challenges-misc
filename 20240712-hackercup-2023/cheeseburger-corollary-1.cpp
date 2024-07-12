@@ -1,3 +1,5 @@
+// https://www.facebook.com/codingcompetitions/hacker-cup/2023/practice-round/problems/A1
+
 #include <iostream>
 
 bool solution(int S, int D, int K) {
