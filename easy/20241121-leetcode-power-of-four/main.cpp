@@ -1,4 +1,4 @@
-// https://leetcode.com/problems/power-of-two/description/
+// https://leetcode.com/problems/power-of-four/description/
 
 #include <cassert>
 #include <cmath>
