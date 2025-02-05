@@ -42,12 +42,9 @@ public:
         }
     };
 
-    int largestRectangleArea(const std::vector<int>& heights) {
-        int max_area = 0;
-
-        // Scan to the left side
+    std::vector<int> compute_areas(const std::vector<int>& heights) {
         std::deque<Histogram> left;
-        std::vector<int> left_area(heights.size());
+        std::vector<int> areas(heights.size());
         for (int i = 0; i < heights.size(); i++) {
             int area = 0;
             // Find the histogram in which height < heights[i]
@@ -63,34 +60,20 @@ public:
             left.erase(left.begin(), index_upper);
             // Add histogram
             left.push_front({heights[i], i});
-            left_area[i] = area;
+            areas[i] = area;
         }
+        return areas;
+    };
 
-        // Scan to the right side
+    int largestRectangleArea(const std::vector<int>& heights) {
+        int max_area = 0;
+        std::vector<int> left_areas = compute_areas(heights);
         // Rule #2: To solve right side, we scan from right to left 
-        std::deque<Histogram> right;
-        std::vector<int> right_area(heights.size());
-        for (int i = heights.size() - 1; i >= 0; i--) {
-            int area = 0;
-            // Find the histogram in which height < heights[i]
-            auto index_upper = std::upper_bound(right.begin(), right.end(), heights[i], Histogram::upper_bound_comparator);
-            if (index_upper != right.end()) {
-                int x = heights.size() - 1 - i - (*index_upper).index - 1;
-                area = heights[i] * x;
-            } else {
-                int x = heights.size() - 1 - i;
-                area = heights[i] * x;
-            }
-            // Delete histograms which height >= heights[i]
-            right.erase(right.begin(), index_upper);
-            // Add histogram
-            right.push_front({heights[i], (int) heights.size() - 1 - i});
-            right_area[i] = area;
-        }
-
+        std::vector<int> reversed_heights = heights; std::reverse(reversed_heights.begin(), reversed_heights.end());
+        std::vector<int> right_areas = compute_areas(reversed_heights); std::reverse(right_areas.begin(), right_areas.end());
         for (int i = 0; i < heights.size(); i++) {
             // Rule #1: The area must be as tall as heights[i]
-            int area = heights[i] + left_area[i] + right_area[i];
+            int area = heights[i] + left_areas[i] + right_areas[i];
             max_area = std::max(max_area, area);
         }
         return max_area;
@@ -124,7 +107,7 @@ int main() {
         std::random_device rd;
         std::mt19937 mt(rd());
         std::uniform_real_distribution<> rnd(0, 1);                     // [0, 1)
-        for (int T = 0; T < 1000; T++) {
+        for (int T = 0; T < 10000; T++) {
             int num_heights = int(rnd(mt) * 1000) + 1;
             std::vector<int> heights;
             for (int i = 0; i < num_heights; i++) {
