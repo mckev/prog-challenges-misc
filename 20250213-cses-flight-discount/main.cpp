@@ -62,11 +62,11 @@ long long solve(int total_cities, const std::vector<Flight>& flights) {
     while (! queues.empty()) {
         Queue queue = queues.top(); queues.pop();
         if (shortest_routes[queue.last_city] != UNDEFINED && queue.total_cost >= shortest_routes[queue.last_city]) {
-            // We have encountered this city before. Skip.
+            // We have encountered this city before. Check if total cost is less than before.
             continue;
         }
         if (queue.last_city == DESTINATION) {
-            // We have reached destination. It must be the optimal path.
+            // We have reached destination. The discounted cost must be optimal.
             long long discounted_cost = queue.total_cost - queue.max_flight_cost + queue.max_flight_cost/2;
             return discounted_cost;
         }
