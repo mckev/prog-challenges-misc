@@ -3,16 +3,16 @@
 #include <cassert>
 #include <iostream>
 #include <map>
-#include <set>
 #include <queue>
+#include <set>
 #include <vector>
 
 
 struct Node {
-    int node;
+    int number;
     bool is_flipped;
     bool operator<(const Node& other) const {
-        return std::tie(node, is_flipped) < std::tie(other.node, other.is_flipped);
+        return std::tie(number, is_flipped) < std::tie(other.number, other.is_flipped);
     }
 };
 
@@ -20,37 +20,38 @@ struct Node {
 long long solve(int target, long long flip_cost, const std::map<Node, std::vector<int>>& edges) {
     const int start = 1;
     struct Queue {
-        int node;
-        bool is_flipped;
+        Node node;
         long long current_cost;
         bool operator<(const Queue& other) const {
             return current_cost > other.current_cost;
         }
     };
     std::priority_queue<Queue> queues;
-    queues.push({start, false, 0});
-    queues.push({start, true, flip_cost});
+    queues.push({{start, false}, 0});
+    queues.push({{start, true}, flip_cost});
 
     // Speed up
     std::set<Node> visited;
 
     while (! queues.empty()) {
         Queue queue = queues.top(); queues.pop();
-        if (queue.node == target) {
-            return queue.current_cost;
+        Node node = queue.node;
+        long long current_cost = queue.current_cost;
+        if (node.number == target) {
+            return current_cost;
         }
         // Speed up
-        bool is_visited = visited.find({queue.node, queue.is_flipped}) != visited.end();
+        bool is_visited = visited.find(node) != visited.end();
         if (is_visited) continue;
-        visited.insert({queue.node, queue.is_flipped});
+        visited.insert(node);
         // Main algorithm (priority queue)
-        bool is_exist = edges.find({queue.node, queue.is_flipped}) != edges.end();
+        bool is_exist = edges.find(node) != edges.end();
         if (is_exist) {
-            for (int node : edges.at({queue.node, queue.is_flipped})) {
-                queues.push({node, queue.is_flipped, queue.current_cost + 1});
+            for (int node_number : edges.at(node)) {
+                queues.push({{node_number, node.is_flipped}, current_cost + 1});
             }
         }
-        queues.push({queue.node, !queue.is_flipped, queue.current_cost + flip_cost});
+        queues.push({{node.number, !node.is_flipped}, current_cost + flip_cost});
     }
     assert(false);
 }
