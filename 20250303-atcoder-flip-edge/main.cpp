@@ -1,15 +1,23 @@
-// E - Flip Edge : https://atcoder.jp/contests/abc395/tasks/abc395_e
+// Flip Edge : https://atcoder.jp/contests/abc395/tasks/abc395_e
 
 #include <cassert>
 #include <iostream>
-#include <limits>
 #include <map>
 #include <set>
 #include <queue>
 #include <vector>
 
 
-long long solve(int target, long long flip_cost, const std::map<std::pair<int, bool>, std::vector<int>>& edges) {
+struct Node {
+    int node;
+    bool is_flipped;
+    bool operator<(const Node& other) const {
+        return std::tie(node, is_flipped) < std::tie(other.node, other.is_flipped);
+    }
+};
+
+
+long long solve(int target, long long flip_cost, const std::map<Node, std::vector<int>>& edges) {
     const int start = 1;
     struct Queue {
         int node;
@@ -24,14 +32,7 @@ long long solve(int target, long long flip_cost, const std::map<std::pair<int, b
     queues.push({start, true, flip_cost});
 
     // Speed up
-    struct Visited {
-        int node;
-        bool is_flipped;
-        bool operator<(const Visited& other) const {
-            return std::tie(node, is_flipped) < std::tie(other.node, other.is_flipped);
-        }
-    };
-    std::set<Visited> visited;
+    std::set<Node> visited;
 
     while (! queues.empty()) {
         Queue queue = queues.top(); queues.pop();
@@ -57,7 +58,7 @@ long long solve(int target, long long flip_cost, const std::map<std::pair<int, b
 
 void test() {
     {
-        std::map<std::pair<int, bool>, std::vector<int>> edges = {
+        std::map<Node, std::vector<int>> edges = {
             {{1, false}, {2, }},
             {{1, true}, {3, }},
             {{2, false}, {4, }},
@@ -75,7 +76,7 @@ void test() {
         assert(answer == 4);
     }
     {
-        std::map<std::pair<int, bool>, std::vector<int>> edges = {
+        std::map<Node, std::vector<int>> edges = {
             {{1, false}, {2, }},
             {{1, true}, {3, }},
             {{2, false}, {4, }},
@@ -93,7 +94,7 @@ void test() {
         assert(answer == 3);
     }
     {
-        std::map<std::pair<int, bool>, std::vector<int>> edges = {
+        std::map<Node, std::vector<int>> edges = {
             {{1, true}, {2, }},
             {{2, false}, {1, 3, }},
             {{3, true}, {2, 4, }},
@@ -109,7 +110,7 @@ void test() {
         assert(answer == 4294967299);
     }
     {
-        std::map<std::pair<int, bool>, std::vector<int>> edges = {
+        std::map<Node, std::vector<int>> edges = {
             {{1, false}, {3, }},
             {{2, true}, {14, }},
             {{3, false}, {5, }},
@@ -142,7 +143,7 @@ int main() {
     int target; std::cin >> target;
     int M; std::cin >> M;
     int flip_cost; std::cin >> flip_cost;
-    std::map<std::pair<int, bool>, std::vector<int>> edges;
+    std::map<Node, std::vector<int>> edges;
     for (int m = 0; m < M; m++) {
         int u; std::cin >> u;
         int v; std::cin >> v;
