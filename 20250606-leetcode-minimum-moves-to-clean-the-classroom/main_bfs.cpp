@@ -27,29 +27,14 @@ private:
         return total_litters;
     }
 
-    int count_reachable_litters(const std::vector<std::string>& _classroom, int start_y, int start_x) {
-        int litters = 0;
-        std::vector<std::string> classroom = _classroom;
-        struct State {
-            int y, x;
-        };
-        std::deque<State> states;
-        states.push_back({start_y, start_x});
-        while (! states.empty()) {
-            State state = states.front(); states.pop_front();
-            int y = state.y;
-            int x = state.x;
-            if (y < 0 || y >= classroom.size()) continue;
-            if (x < 0 || x >= classroom[y].size()) continue;
-            if (classroom[y][x] == OBSTACLE) continue;
-            if (classroom[y][x] == LITTER) litters++;
-            classroom[y][x] = OBSTACLE;
-            states.push_back({ y - 1, x });
-            states.push_back({ y + 1, x });
-            states.push_back({ y, x - 1 });
-            states.push_back({ y, x + 1 });
-        }
-        return litters;
+    int count_reachable_litters(std::vector<std::string>& classroom, int y, int x) {
+        int litter = 0;
+        if (y < 0 || y >= classroom.size()) return 0;
+        if (x < 0 || x >= classroom[y].size()) return 0;
+        if (classroom[y][x] == OBSTACLE) return 0;
+        if (classroom[y][x] == LITTER) litter = 1;
+        classroom[y][x] = OBSTACLE;
+        return count_reachable_litters(classroom, y - 1, x) + count_reachable_litters(classroom, y + 1, x) + count_reachable_litters(classroom, y, x - 1) + count_reachable_litters(classroom, y, x + 1) + litter;
     }
 
     std::tuple<int, int> get_start_coord(const std::vector<std::string>& classroom) {
@@ -69,14 +54,15 @@ public:
     int minMoves(const std::vector<std::string>& classroom, int full_energy) {
         int max_litters = 0;
         int min_moves = 0;
-        auto [start_y, start_x] = get_start_coord(classroom);
-
-        // Check if we can reach all litters
         int total_litters = count_total_litters(classroom);
         if (total_litters == 0) {
             return 0;
         }
-        int reachable_litters = count_reachable_litters(classroom, start_y, start_x);
+        auto [start_y, start_x] = get_start_coord(classroom);
+
+        // Check if we can reach all litters
+        std::vector<std::string> _classroom = classroom;
+        int reachable_litters = count_reachable_litters(_classroom, start_y, start_x);
         if (reachable_litters < total_litters) return NO_SOLUTION;
 
         // To avoid BFS from processing previously explored path
