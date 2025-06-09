@@ -1,79 +1,85 @@
 // https://leetcode.com/problems/minimum-moves-to-clean-the-classroom/
 
+#include <bitset>
 #include <cassert>
 #include <deque>
 #include <string>
 #include <tuple>
+#include <unordered_map>
 #include <vector>
 
 
 class Solution {
 private:
-    const int LITTER = 'L';
-    const int START = 'S';
-    const int OBSTACLE = 'X';
-    const int RESET = 'R';
-    const int EMPTY = '.';
+    static const int LITTER = 'L';
+    static const int START = 'S';
+    static const int OBSTACLE = 'X';
+    static const int RESET = 'R';
+    static const int EMPTY = '.';
 
-    int count_total_litters(const std::vector<std::string>& classroom) {
-        int total_litters = 0;
+    static std::tuple<int, int> get_start_coord(const std::vector<std::string>& classroom) {
         for (int y = 0; y < classroom.size(); y++) {
             for (int x = 0; x < classroom[y].size(); x++) {
-                if (classroom[y][x] == LITTER) {
-                    total_litters++;
-                }
-            }
-        }
-        return total_litters;
-    }
-
-    int count_reachable_litters(std::vector<std::string>& classroom, int y, int x) {
-        int litter = 0;
-        if (y < 0 || y >= classroom.size()) return 0;
-        if (x < 0 || x >= classroom[y].size()) return 0;
-        if (classroom[y][x] == OBSTACLE) return 0;
-        if (classroom[y][x] == LITTER) litter = 1;
-        classroom[y][x] = OBSTACLE;
-        return count_reachable_litters(classroom, y - 1, x) + count_reachable_litters(classroom, y + 1, x) + count_reachable_litters(classroom, y, x - 1) + count_reachable_litters(classroom, y, x + 1) + litter;
-    }
-
-    std::tuple<int, int> get_start_coord(const std::vector<std::string>& classroom) {
-        for (int y = 0; y < classroom.size(); y++) {
-            for (int x = 0; x < classroom[y].size(); x++) {
-                if (classroom[y][x] == START) {
+                if (classroom[y][x] == Solution::START) {
                     return {y, x};
                 }
             }
         }
-        assert(false);
+        assert (false);
+    }
+
+    static inline void hash_combine(std::size_t& seed, const std::size_t& h) {
+        seed ^= h + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     }
 
 public:
     static const int NO_SOLUTION = -1;
+    static const int MAX_LITTERS = 10;
 
     int minMoves(const std::vector<std::string>& classroom, int full_energy) {
-        int max_litters = 0;
-        int min_moves = 0;
-        int total_litters = count_total_litters(classroom);
+        auto [start_y, start_x] = get_start_coord(classroom);
+
+        // Convert all litter positions into index (0, 1, 2, 3, ...). We will use this later to convert into bits.
+        int total_litters;
+        std::vector<std::vector<int>> litter_indexes(classroom.size(), std::vector<int>(classroom[0].size(), -1));
+        {
+            int index = 0;
+            for (int y = 0; y < classroom.size(); y++) {
+                for (int x = 0; x < classroom[y].size(); x++) {
+                    if (classroom[y][x] == Solution::LITTER) {
+                        litter_indexes[y][x] = index;
+                        index++;
+                    }
+                }
+            }
+            total_litters = index;
+            assert (total_litters <= MAX_LITTERS);
+        }
         if (total_litters == 0) {
             return 0;
         }
-        auto [start_y, start_x] = get_start_coord(classroom);
-
-        // Check if we can reach all litters
-        std::vector<std::string> _classroom = classroom;
-        int reachable_litters = count_reachable_litters(_classroom, start_y, start_x);
-        if (reachable_litters < total_litters) return NO_SOLUTION;
 
         // To avoid BFS from processing previously explored path
-        const int UNEXPLORED = -1;
-        struct Optimizer {
-            int litters;
-            int moves;
+        struct OptimizerKey {
+            int y, x;
+            std::bitset<MAX_LITTERS> explored;  // We are using bits to track which litters have been visited (max 10 bits for 10 max litters)
+            bool operator==(const OptimizerKey& other) const {
+                return std::tie(y, x, explored) == std::tie(other.y, other.x, other.explored);
+            }
         };
-        std::vector<std::vector<Optimizer>> optimizers(classroom.size(), std::vector<Optimizer>(classroom[0].size(), {
-            0, UNEXPLORED
-        }));
+        struct OptimizerKeyHash {
+            std::size_t operator()(const OptimizerKey& k) const {
+                std::size_t seed = 0;
+                Solution::hash_combine(seed, std::hash<int>{}(k.y));
+                Solution::hash_combine(seed, std::hash<int>{}(k.x));
+                Solution::hash_combine(seed, std::hash<std::bitset<MAX_LITTERS>>{}(k.explored));
+                return seed;
+            }
+        };
+        struct OptimizerValue {
+            int energy;
+        };
+        std::unordered_map<OptimizerKey, OptimizerValue, OptimizerKeyHash> optimizers;
 
         // BFS
         struct State {
@@ -81,11 +87,10 @@ public:
             int moves;
             int energy;
             int litters;
-            std::vector<std::string> classroom;
-            std::vector<std::vector<Optimizer>> optimizers;
+            std::bitset<MAX_LITTERS> explored;
         };
         std::deque<State> states;
-        states.push_back({ start_y, start_x, 0, full_energy, 0, classroom, optimizers });
+        states.push_back({ start_y, start_x, 0, full_energy, 0, {} });
         while (! states.empty()) {
             State state = states.front(); states.pop_front();
             int y = state.y;
@@ -93,38 +98,38 @@ public:
             int moves = state.moves;
             int energy = state.energy;
             int litters = state.litters;
-            std::vector<std::string> classroom = state.classroom;
+            std::bitset<MAX_LITTERS> explored = state.explored;
             if (y < 0 || y >= classroom.size()) continue;
             if (x < 0 || x >= classroom[y].size()) continue;
-            if (classroom[y][x] == OBSTACLE) continue;
-            if (classroom[y][x] == RESET) {
+            if (classroom[y][x] == OBSTACLE) {
+                continue;
+            } else if (classroom[y][x] == RESET) {
                 energy = full_energy;
-            }
-            if (classroom[y][x] == LITTER) {
-                classroom[y][x] = EMPTY;
+            } else if (classroom[y][x] == LITTER && !explored[litter_indexes[y][x]]) {
                 litters++;
-                if (litters > max_litters) {
-                    max_litters = litters;
-                    min_moves = moves;
-                }
                 if (litters == total_litters) {
-                    return min_moves;
+                    return moves;
                 }
+                explored[litter_indexes[y][x]] = true;
             }
 
-            std::vector<std::vector<Optimizer>> optimizers = state.optimizers;
-            if (optimizers[y][x].moves != UNEXPLORED && (litters < optimizers[y][x].litters || (litters == optimizers[y][x].litters && moves > optimizers[y][x].moves))) continue;
-            optimizers[y][x] = {
-                litters, moves
+            // Hint #2: Maintain a 3D array bestEnergy[x][y][mask] storing the maximum e seen for each (x,y,mask) and skip any new state with e <= bestEnergy[x][y][mask] to prune
+            bool is_exist = optimizers.find({y, x, explored}) != optimizers.end();
+            if (is_exist) {
+                OptimizerValue optimizer = optimizers[{y, x, explored}];
+                if (energy <= optimizer.energy) continue;
+            }
+            optimizers[{y, x, explored}] = {
+                energy
             };
 
             if (energy == 0) continue;
             energy--;
             moves++;
-            states.push_back({ y - 1, x, moves, energy, litters, classroom, optimizers});
-            states.push_back({ y + 1, x, moves, energy, litters, classroom, optimizers});
-            states.push_back({ y, x - 1, moves, energy, litters, classroom, optimizers});
-            states.push_back({ y, x + 1, moves, energy, litters, classroom, optimizers});
+            states.push_back({ y - 1, x, moves, energy, litters, explored });
+            states.push_back({ y + 1, x, moves, energy, litters, explored });
+            states.push_back({ y, x - 1, moves, energy, litters, explored });
+            states.push_back({ y, x + 1, moves, energy, litters, explored });
         }
         return NO_SOLUTION;
     }
@@ -263,6 +268,94 @@ int main() {
         Solution solution = Solution();
         int answer = solution.minMoves(classroom, 20);
         assert (answer == 16);
+    }
+    {
+        std::vector<std::string> classroom = {
+            "..LR",
+            "RL.X",
+            "..L.",
+            "X..S",
+        };
+        Solution solution = Solution();
+        int answer = solution.minMoves(classroom, 5);
+        assert (answer == 8);
+    }
+    {
+        std::vector<std::string> classroom = {
+            "LRLRXX",
+            "R.R.LL",
+            "L...R.",
+            ".RL.XL",
+            "X.XRRR",
+            ".L.RXL",
+            "...SLX",
+            ".RXX.R",
+            "..XR..",
+        };
+        Solution solution = Solution();
+        int answer = solution.minMoves(classroom, 10);
+        assert (answer == 23);
+    }
+    {
+        std::vector<std::string> classroom = {
+            "S.RXL.XRR.",
+            "R.XRRRRX.X",
+            "LX..XL..RR",
+            "RXL.L.RLX.",
+            "RR.L.XRXLL",
+            "L.RRXXRRRX",
+            "RXRRXX.RXX",
+            "XXXRX..XR.",
+            "X.XR.XXR.R",
+        };
+        Solution solution = Solution();
+        int answer = solution.minMoves(classroom, 7);
+        assert (answer == 30);
+    }
+    {
+        std::vector<std::string> classroom = {
+            "LRRX.LXR.LX",
+            ".RLRRLXRXX.",
+            "L..RRXLXXR.",
+            "X.R.RRXRXX.",
+            "XSRXXRRXLL.",
+            "RRXR.RXRRRX",
+            "RRRX.XXRR.X",
+            "XX.R....XRR",
+            "RXXXXXXR..R",
+            "X.RXRX.RX.R",
+            ".XX.X.X..XR",
+        };
+        Solution solution = Solution();
+        int answer = solution.minMoves(classroom, 8);
+        assert (answer == -1);
+    }
+    {
+        std::vector<std::string> classroom = {
+            ".XR.X.RR.XR.XX.XXXRR",
+            "R..RRL.RXXXRXRXXXRX.",
+            "RRRR.RRXX.X.RX.R..XX",
+            "R...R.RX.L..RRL..R.L",
+            ".X..RX.XRRRX..X.R.R.",
+            "R.XRXRXX..R.R..R.X.R",
+            "R.X.RX.RR..X.X.RL.R.",
+            "LXRX.RRXXRRLRXRX.RXR",
+            "X.XR.RRR..RXX.X.XRXR",
+            "XXXR..XRXRR.RR..RX.R",
+            "RR..XXRR..XXX.X..R.R",
+            "RR.RRR.X.RRRX...XRRR",
+            "R...S.XXLX.XRRX.XRRX",
+            "X..X.X.RXRX.X.XXXR.R",
+            "R.LXRR.RX.XR.RRXX.RX",
+            "XX.XR.R.R.XR.X.R..RR",
+            "..XXR.R..RXX.R..RRXX",
+            ".XR.R....XR.R.XX..RX",
+            "XXRRRRXXXRRX.RXLRXXR",
+            "X.XXXXRRXR.RXRXRXX.R",
+        };
+        Solution solution = Solution();
+        int answer = solution.minMoves(classroom, 11);
+        assert (answer == 103);
     }
     return 0;
 }
