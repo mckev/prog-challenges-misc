@@ -18,8 +18,8 @@ private:
 
     bool hasIntegerSquareRoot(__int128_t n) {
         if (n < 0) return false;
-        long long root = static_cast<long long>(std::sqrt(static_cast<long double>(n)));
-        return static_cast<__int128>(root) * root == n;
+        long long root = (long long) std::sqrt((long double) n);
+        return (__int128_t) root * root == n;
     }
 
     void process(const std::vector<int>& inputs, int pos, __int128_t multiplication, std::vector<int> poses) {
@@ -53,12 +53,13 @@ public:
 class Solution {
 private:
     long long modpow(long long base, long long exp, long long mod) {
-        // Computes (base^exp) % mod using binary exponentiation
+        // Compute (base^exp) % mod using binary exponentiation
         base %= mod;                                                // Ensure base is within mod
         long long result = 1;
         while (exp > 0) {
-            if (exp & 1)                                            // If exp is odd
+            if (exp & 1) {                                          // If exp is odd
                 result = (result * base) % mod;
+            }
             base = (base * base) % mod;
             exp >>= 1;                                              // exp = exp / 2
         }
@@ -206,94 +207,79 @@ public:
 };
 
 
+#ifdef _TEST
 void test() {
     {
         std::vector<int> inputs = {1, 1, 1, 1};
         Solution solution = Solution();
         long long answer1 = solution.solve(inputs);
         assert(answer1 == 15);
-#ifdef _TEST
         BruteforceSolution bruteforce_solution = BruteforceSolution();
         long long answer2 = bruteforce_solution.solve(inputs);
         assert(answer2 == answer1);
-#endif
     }
     {
         std::vector<int> inputs = {2, 2, 2, 2};
         Solution solution = Solution();
         long long answer1 = solution.solve(inputs);
         assert(answer1 == 7);
-#ifdef _TEST
         BruteforceSolution bruteforce_solution = BruteforceSolution();
         long long answer2 = bruteforce_solution.solve(inputs);
         assert(answer2 == answer1);
-#endif
     }
     {
         std::vector<int> inputs = {1, 2, 4, 5, 8};
         Solution solution = Solution();
         long long answer1 = solution.solve(inputs);
         assert(answer1 == 7);
-#ifdef _TEST
         BruteforceSolution bruteforce_solution = BruteforceSolution();
         long long answer2 = bruteforce_solution.solve(inputs);
         assert(answer2 == answer1);
-#endif
     }
     {
         std::vector<int> inputs = {1, 2, 3, 4, 5, 6};
         Solution solution = Solution();
         long long answer1 = solution.solve(inputs);
         assert(answer1 == 7);
-#ifdef _TEST
         BruteforceSolution bruteforce_solution = BruteforceSolution();
         long long answer2 = bruteforce_solution.solve(inputs);
         assert(answer2 == answer1);
-#endif
     }
     {
         std::vector<int> inputs = {70, 70};
         Solution solution = Solution();
         long long answer1 = solution.solve(inputs);
         assert(answer1 == 1);
-#ifdef _TEST
         BruteforceSolution bruteforce_solution = BruteforceSolution();
         long long answer2 = bruteforce_solution.solve(inputs);
         assert(answer2 == answer1);
-#endif
     }
     {
         std::vector<int> inputs = {64, 65, 40, 26, 36, 46, 53, 31, 63, 11, 2, 46, 59};
         Solution solution = Solution();
         long long answer1 = solution.solve(inputs);
         assert(answer1 == 15);
-#ifdef _TEST
         BruteforceSolution bruteforce_solution = BruteforceSolution();
         long long answer2 = bruteforce_solution.solve(inputs);
         assert(answer2 == answer1);
-#endif
     }
     {
         std::vector<int> inputs = {44, 57, 54, 57, 54, 65, 40, 57, 59, 16, 39, 51, 32, 51, 20, 9, 8};
         Solution solution = Solution();
         long long answer1 = solution.solve(inputs);
         assert(answer1 == 511);
-#ifdef _TEST
         BruteforceSolution bruteforce_solution = BruteforceSolution();
         long long answer2 = bruteforce_solution.solve(inputs);
         assert(answer2 == answer1);
-#endif
     }
     {
         std::vector<int> inputs = {50, 40, 62, 60, 29, 51, 12, 40, 57, 36, 35, 45, 51, 4, 25, 31};
         Solution solution = Solution();
         long long answer1 = solution.solve(inputs);
         assert(answer1 == 255);
-#ifdef _TEST
         BruteforceSolution bruteforce_solution = BruteforceSolution();
         long long answer2 = bruteforce_solution.solve(inputs);
         assert(answer2 == answer1);
-#endif
     }
     {
         std::vector<int> inputs = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70};
@@ -303,9 +289,7 @@ void test() {
     }
     {
         Solution solution = Solution();
-#ifdef _TEST
         BruteforceSolution bruteforce_solution = BruteforceSolution();
-#endif
         std::random_device rd;
         std::mt19937 mt(rd());
         std::uniform_real_distribution<> rnd(0, 1);                     // [0, 1)
@@ -317,10 +301,8 @@ void test() {
                 inputs.push_back(input);
             }
             long long answer1 = solution.solve(inputs);
-#ifdef _TEST
             long long answer2 = bruteforce_solution.solve(inputs);
             assert(answer2 == answer1);
-#endif
         }
     }
     {
@@ -340,6 +322,7 @@ void test() {
     }
     std::cout << "Tests passed." << std::endl;
 }
+#endif
 
 
 int main() {
