@@ -6,6 +6,7 @@
 #include <map>
 #include <random>
 #include <set>
+#include <unordered_map>
 #include <vector>
 #pragma GCC optimize "trapv"                                        // Detect overflow
 // #define _TEST
@@ -16,7 +17,7 @@ class BruteforceSolution {
 private:
     long long answer;
 
-    bool hasIntegerSquareRoot(__int128_t n) {
+    bool hasIntegerSquareRoot(__int128_t n) const {
         if (n < 0) return false;
         long long root = (long long) std::sqrt((long double) n);
         return (__int128_t) root * root == n;
@@ -52,7 +53,7 @@ public:
 
 class Solution {
 private:
-    long long modpow(long long base, long long exp, long long mod) {
+    long long modpow(long long base, long long exp, long long mod) const {
         // Compute (base^exp) % mod using binary exponentiation
         base %= mod;                                                // Ensure base is within mod
         long long result = 1;
@@ -66,7 +67,7 @@ private:
         return result;
     }
 
-    std::vector<int> compute_primes(int max) {
+    std::vector<int> compute_primes(int max) const {
         // Sieve of Eratosthenes
         std::vector<bool> is_primes(max + 1, true);
         is_primes.at(0) = false;
@@ -88,7 +89,7 @@ private:
     }
 
     static const int MAX_NUM_PRIMES = 19;
-    uint32_t compute_odd_prime_powers(const std::vector<int>& primes, int number) {
+    uint32_t compute_odd_prime_powers(const std::vector<int>& primes, int number) const {
         // Observations:
         //   - Number 2 behaves similarly to 2*2*2 = 8, 2*3*3 = 18, 2*5*5 = 50, 2*2*2*2*2 = 32, 2*3*3*3*3 = 162, 2*2*2*2*2*2*2 = 128
         //     Means we are only interested on the odd powers.
@@ -117,46 +118,56 @@ private:
         return odd_prime_powers.to_ulong();
     }
 
-    struct History {
+    struct Cache {
         int pos;
         uint32_t resultant;
-        bool operator<(const History& other) const {
-            return std::tie(pos, resultant) < std::tie(other.pos, other.resultant);
+        bool operator==(const Cache& other) const {
+            return pos == other.pos && resultant == other.resultant;
         }
+        struct Hasher {
+            std::size_t operator()(const Cache& c) const {
+                return std::hash<int>()(c.pos) ^ (std::hash<uint32_t>()(c.resultant) << 1);
+            }
+        };
     };
-    std::set<History> history;
+    std::unordered_map<Cache, long long, Cache::Hasher> cache;
 
     struct Element {
         const uint32_t odd_prime_powers;
         const int occurrences;
-        bool is_full_mark;
     };
     std::vector<Element> elements;
 
-    void process(int pos, uint32_t resultant, std::vector<int> poses) {
+    long long process(int pos, uint32_t resultant, std::vector<int> poses) {
+        // Observations:
+        //   - Even occurrences always make a square, so 2^(n-1) of each element is already a square.
+        //   - Now for the odd occurrences, it only contributes to 2^(n-1) when the XOR of selected elements is 0 (meaning they are a square).
         if (pos >= (int) elements.size()) {
-            return;
+            if (resultant == 0) {
+                // std::cout << "Got XOR: "; for (int _pos : poses) { std::cout << elements.at(_pos).odd_prime_powers << " "; }; std::cout << std::endl;
+                return 1;
+            } else {
+                return 0;
+            }
         }
 
-        // Have we encountered this before?
-        bool is_exist = history.find({pos, resultant}) != history.end();
+        // Cache
+        bool is_exist = cache.find({pos, resultant}) != cache.end();
         if (is_exist) {
-            return;
+            return cache.at({pos, resultant});
         }
-        history.insert({pos, resultant});
 
         // Case we pick the element
         std::vector<int> pick_poses = poses; pick_poses.push_back(pos);
         uint32_t pick_resultant = (resultant xor elements.at(pos).odd_prime_powers);
-        if (pick_resultant == 0) {
-            // If the XOR operation is 0, means it's a square.
-            // std::cout << "Got XOR: "; for (int _pos : pick_poses) { std::cout << elements.at(_pos).odd_prime_powers << " "; }; std::cout << std::endl;
-            elements.at(pos).is_full_mark = true;
-        }
-        process(pos + 1, pick_resultant, pick_poses);
+        long long pick = modpow(2, elements.at(pos).occurrences - 1, 1000000007) * process(pos + 1, pick_resultant, pick_poses);
 
         // Case we do not pick the element
-        process(pos + 1, resultant, poses);
+        long long not_pick = modpow(2, elements.at(pos).occurrences - 1, 1000000007) * process(pos + 1, resultant, poses);
+
+        long long answer = (pick + not_pick) % 1000000007;
+        cache[{pos, resultant}] = answer;
+        return answer;
     }
 
 public:
@@ -164,8 +175,8 @@ public:
 
     long long solve(std::vector<int>& inputs) {
         // std::cout << "--- Case: "; for (int input : inputs) { std::cout << input << " "; }; std::cout << std::endl;
-        history.clear();
         elements.clear();
+        cache.clear();
 
         // Establish numbering system based on odd prime powers
         std::vector<int> primes = compute_primes(MAX_NUMBER);
@@ -185,23 +196,10 @@ public:
         // Convert into vector
         for (const auto& [k, v] : odd_prime_powers_counters) {
             // std::cout << std::bitset<MAX_NUM_PRIMES>(k) << " (" << k << "): " << v << " occurrences" << std::endl;
-            elements.push_back({ k, v, false });
+            elements.push_back({ k, v });
         }
 
-        // Observations:
-        //   - Even occurrences always make a square, so 2^(n-1) of each element is already a square.
-        //   - Here we need to find combinations of elements which their XOR is 0 (meaning they are a square), in this case the last element got a full mark, i.e. 2^n.
-        process(0, 0, {});
-
-        long long answer = 1;
-        for (const Element& element : elements) {
-            if (element.is_full_mark) {
-                answer *= modpow(2, element.occurrences, 1000000007);
-            } else {
-                answer *= modpow(2, element.occurrences - 1, 1000000007);
-            }
-            answer %= 1000000007;
-        }
+        long long answer = process(0, 0, {});
         return answer - 1;
     }
 };
