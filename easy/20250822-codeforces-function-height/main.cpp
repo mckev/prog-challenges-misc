@@ -1,5 +1,6 @@
-#include <iostream>
+// https://codeforces.com/problemset/problem/1036/A
 
+#include <iostream>
 
 int main() {
     long long n; std::cin >> n;
