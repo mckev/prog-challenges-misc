@@ -205,7 +205,7 @@ void test() {
         assert(answer_efficient == expected);
     }
     {
-        // Random
+        // Generate tests
         std::random_device rd;
         std::mt19937 mt(rd());
         std::uniform_real_distribution<> rnd(0, 1);                     // [0, 1)
@@ -221,7 +221,7 @@ void test() {
             BruteforceSolution bruteforce_solution = BruteforceSolution();
             std::pair<int, int> answer_efficient = solution.solve(elements, query);
             std::pair<int, int> answer_bruteforce = bruteforce_solution.solve(elements, query);
-            assert(answer_efficient.second == answer_bruteforce.second);
+            assert(answer_efficient == answer_bruteforce);
         }
     }
 }
@@ -233,16 +233,18 @@ int main() {
     for (int t = 0; t < T; t++) {
         int N; std::cin >> N;
         int Q; std::cin >> Q;                   // 1 query (Q is 1)
+        assert(Q == 1);
         std::vector<long long> elements;
         for (int n = 0; n < N; n++) {
             int element; std::cin >> element;
             elements.push_back(element);
         }
         std::vector<std::pair<int, int>> queries;
-        assert(Q == 1);
         for (int q = 0; q < Q; q++) {
             int l; std::cin >> l;
+            assert(l == 1);
             int r; std::cin >> r;
+            assert(r == N);
             queries.push_back({l, r});
         }
         Solution solution = Solution();
