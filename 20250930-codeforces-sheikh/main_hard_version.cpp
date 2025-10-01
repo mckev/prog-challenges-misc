@@ -43,11 +43,11 @@ public:
 
 class Solution {
 private:
-        static long long range_sum_query(std::vector<long long>& prefix_sum, int l, int r) {
+        static long long range_query_sum(std::vector<long long>& prefix_sum, int l, int r) {
             // [l - r], 0 based indexing
             return prefix_sum.at(r) - (l - 1 >= 0 ? prefix_sum.at(l - 1) : 0);
         }
-        static long long range_xor_query(std::vector<long long>& prefix_xor, int l, int r) {
+        static long long range_query_xor(std::vector<long long>& prefix_xor, int l, int r) {
             // [l - r], 0 based indexing
             return prefix_xor.at(r) ^ (l - 1 >= 0 ? prefix_xor.at(l - 1) : 0);
         }
@@ -82,12 +82,12 @@ public:
         // Solve
         for (const std::pair<int, int>& query : queries) {
             std::pair<int, int> answer = {UNDEFINED, UNDEFINED};
-            long long global_max = range_sum_query(prefix_sum, query.first - 1, query.second - 1) - range_xor_query(prefix_xor, query.first - 1, query.second - 1);
+            long long global_max = range_query_sum(prefix_sum, query.first - 1, query.second - 1) - range_query_xor(prefix_xor, query.first - 1, query.second - 1);
             for (int i = query.first - 1; i < query.second; ) {
-                long long local_max = range_sum_query(prefix_sum, i, query.second - 1) - range_xor_query(prefix_xor, i, query.second - 1);
+                long long local_max = range_query_sum(prefix_sum, i, query.second - 1) - range_query_xor(prefix_xor, i, query.second - 1);
                 if (local_max < global_max) break;
                 auto it = std::lower_bound(index_range.begin() + i, index_range.begin() + query.second, local_max, [&prefix_sum, &prefix_xor, i](int j, long long val) {
-                    return range_sum_query(prefix_sum, i, j) - range_xor_query(prefix_xor, i, j) < val;
+                    return range_query_sum(prefix_sum, i, j) - range_query_xor(prefix_xor, i, j) < val;
                 });
                 int j = std::distance(index_range.begin(), it);
                 if (answer.first == UNDEFINED || j - i < answer.second - answer.first) {
