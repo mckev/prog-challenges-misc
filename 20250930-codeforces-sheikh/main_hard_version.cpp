@@ -84,8 +84,12 @@ public:
             std::pair<int, int> answer = {UNDEFINED, UNDEFINED};
             long long global_max = range_query_sum(prefix_sum, query.first - 1, query.second - 1) - range_query_xor(prefix_xor, query.first - 1, query.second - 1);
             for (int i = query.first - 1; i < query.second; ) {
+                // Example elements[]: 21, 32, 32, 32, 10
+                // Case i == 0:   0  0 64 64 64
+                // Here we can calculate the local_max (e.g. 64) in O(1) using Range Query
                 long long local_max = range_query_sum(prefix_sum, i, query.second - 1) - range_query_xor(prefix_xor, i, query.second - 1);
                 if (local_max < global_max) break;
+                // Here we can find the first index "j" to reach local_max (e.g. index 2) in O(log N) using Binary Search (i.e. lower bound)
                 auto it = std::lower_bound(index_range.begin() + i, index_range.begin() + query.second, local_max, [&prefix_sum, &prefix_xor, i](int j, long long val) {
                     return range_query_sum(prefix_sum, i, j) - range_query_xor(prefix_xor, i, j) < val;
                 });
@@ -93,6 +97,7 @@ public:
                 if (answer.first == UNDEFINED || j - i < answer.second - answer.first) {
                     answer = {i + 1, j + 1};
                 }
+                // Skip elements of 0, as it does not affect sum and xor
                 if (elements[i] == 0) {
                     i += skip_zero.at(i);
                 } else {
@@ -200,7 +205,7 @@ void test() {
         std::mt19937 mt(rd());
         std::uniform_real_distribution<> rnd(0, 1);                     // [0, 1)
         for (int T = 0; T < 100000; T++) {
-            int N = int(rnd(mt) * 10) + 1;                           // [1, 10000]
+            int N = int(rnd(mt) * 10) + 1;
             std::vector<long long> elements;
             for (int n = 0; n < N; n++) {
                 long long element = (long long) (rnd(mt) * 10);
@@ -208,8 +213,8 @@ void test() {
             }
             std::vector<std::pair<int, int>> queries;
             for (int n = 0; n < N; n++) {
-                int l = int(rnd(mt) * N) + 1;
-                int r = int(rnd(mt) * N) + 1;
+                int l = int(rnd(mt) * N) + 1;                           // [1, N]
+                int r = int(rnd(mt) * N) + 1;                           // [1, N]
                 if (l > r) {
                     int swap = l;
                     l = r;
@@ -230,7 +235,7 @@ void test() {
 
 
 int main() {
-    // test();
+    test();
     int T; std::cin >> T;
     for (int t = 0; t < T; t++) {
         int N; std::cin >> N;
