@@ -41,143 +41,60 @@ public:
 };
 
 
-/*
- * Disjoint Sparse Table
- *
- * Usage:
- * - Initialize with a vector<T>.
- * - Call init() to prepare internal structures.
- * - query(l, r) returns the combined result over [l, r].
- *
- * Notes:
- * - 0-based indexing.
- * - Modify `comb` and `id` for different associative operations:
- *   For sum: comb = +, id = 0
- *   For product: comb = *, id = 1
- *   For gcd: comb = gcd, id = 0
- *   For min: comb = min, id = large_value (e.g. 1e18)
- * - If TLE occurs, consider using integer arrays instead of vectors.
- */
-
-template <class T>
-struct RangeQuerySum {
-    int n;                                  // log size
-    std::vector<std::vector<T>> stor;       // precomputed prefix/suffix combinations
-    std::vector<T> a;                       // input array, padded to power of two
-    T id = 0;                               // identity element for `comb`
-
-    // Define associative operation here
-    T comb(const T& x, const T& y) const { return x + y; }
-
-    RangeQuerySum(const std::vector<T>& arr) : a(arr) {
-        n = 0;
-        while ((1 << n) < (int)a.size()) ++n;
-        a.resize(1 << n, id);
-        stor.assign(1 << n, std::vector<T>(n + 1, id));
-    }
-
-    void fill(int l, int r, int depth) {
-        if (depth < 0) return;
-        int m = (l + r) / 2;
-        T prefix = id;
-        for (int i = m - 1; i >= l; --i)
-            stor[i][depth] = prefix = comb(a[i], prefix);
-        T suffix = id;
-        for (int i = m; i < r; ++i)
-            stor[i][depth] = suffix = comb(suffix, a[i]);
-        fill(l, m, depth - 1);
-        fill(m, r, depth - 1);
-    }
-
-    void init() {
-        fill(0, 1 << n, n - 1);
-    }
-
-    // Query associative combination over [l, r]
-    T query(int l, int r) const {
-        if (l == r) return a[l];
-        int t = 31 - __builtin_clz(l ^ r);
-        return comb(stor.at(l).at(t), stor.at(r).at(t));
-    }
-};
-
-
-template <class T>
-struct RangeQueryXor {
-    int n;                                  // log size
-    std::vector<std::vector<T>> stor;       // precomputed prefix/suffix combinations
-    std::vector<T> a;                       // input array, padded to power of two
-    T id = 0;                               // identity element for `comb`
-
-    // Define associative operation here
-    T comb(const T& x, const T& y) const { return x ^ y; }
-
-    RangeQueryXor(const std::vector<T>& arr) : a(arr) {
-        n = 0;
-        while ((1 << n) < (int)a.size()) ++n;
-        a.resize(1 << n, id);
-        stor.assign(1 << n, std::vector<T>(n + 1, id));
-    }
-
-    void fill(int l, int r, int depth) {
-        if (depth < 0) return;
-        int m = (l + r) / 2;
-        T prefix = id;
-        for (int i = m - 1; i >= l; --i)
-            stor[i][depth] = prefix = comb(a[i], prefix);
-        T suffix = id;
-        for (int i = m; i < r; ++i)
-            stor[i][depth] = suffix = comb(suffix, a[i]);
-        fill(l, m, depth - 1);
-        fill(m, r, depth - 1);
-    }
-
-    void init() {
-        fill(0, 1 << n, n - 1);
-    }
-
-    // Query associative combination over [l, r]
-    T query(int l, int r) const {
-        if (l == r) return a[l];
-        int t = 31 - __builtin_clz(l ^ r);
-        return comb(stor.at(l).at(t), stor.at(r).at(t));
-    }
-};
-
-
-static std::vector<int> index_range;
 class Solution {
+private:
+        static long long range_sum_query(std::vector<long long>& prefix_sum, int l, int r) {
+            // [l - r], 0 based indexing
+            return prefix_sum.at(r) - (l - 1 >= 0 ? prefix_sum.at(l - 1) : 0);
+        }
+        static long long range_xor_query(std::vector<long long>& prefix_xor, int l, int r) {
+            // [l - r], 0 based indexing
+            return prefix_xor.at(r) ^ (l - 1 >= 0 ? prefix_xor.at(l - 1) : 0);
+        }
+
 public:
     std::vector<std::pair<int, int>> solve(const std::vector<long long>& elements, std::vector<std::pair<int, int>>& queries) const {
         std::vector<std::pair<int, int>> answers;
-        RangeQuerySum<long long> range_sum = RangeQuerySum(elements); range_sum.init();
-        RangeQueryXor<long long> range_xor = RangeQueryXor(elements); range_xor.init();
-        std::vector<int> skip_zero(elements.size(), 0);
-        {
-            for (int i = elements.size() - 1; i >= 0; i--) {
-                if (elements[i] != 0) continue;
-                if (i + 1 < elements.size()) {
-                    skip_zero[i] = skip_zero[i + 1] + 1;
-                } else {
-                    skip_zero[i] = 1;
-                }
-            }
+
+        // Optimization: Index Range (for lower bound)
+        std::vector<int> index_range(elements.size());
+        for (int i = 0; i < elements.size(); i++) {
+            index_range[i] = i;
         }
+
+        // Optimization: Range Query
+        std::vector<long long> prefix_sum(elements.size());
+        for (int i = 0; i < elements.size(); i++) {
+            prefix_sum[i] = (i - 1 >= 0 ? prefix_sum[i - 1] : 0) + elements[i];
+        }
+        std::vector<long long> prefix_xor(elements.size());
+        for (int i = 0; i < elements.size(); i++) {
+            prefix_xor[i] = (i - 1 >= 0 ? prefix_xor[i - 1] : 0) ^ elements[i];
+        }
+
+        // Optimization: Skip zero
+        std::vector<int> skip_zero(elements.size(), 0);
+        for (int i = elements.size() - 1; i >= 0; i--) {
+            if (elements[i] != 0) continue;
+            skip_zero[i] = (i + 1 < elements.size() ? skip_zero[i + 1] : 0) + 1;
+        }
+
+        // Solve
         for (const std::pair<int, int>& query : queries) {
             std::pair<int, int> answer = {UNDEFINED, UNDEFINED};
-            long long global_max = range_sum.query(query.first - 1, query.second - 1) - range_xor.query(query.first - 1, query.second - 1);
+            long long global_max = range_sum_query(prefix_sum, query.first - 1, query.second - 1) - range_xor_query(prefix_xor, query.first - 1, query.second - 1);
             for (int i = query.first - 1; i < query.second; ) {
-                long long local_max = range_sum.query(i, query.second - 1) - range_xor.query(i, query.second - 1);
+                long long local_max = range_sum_query(prefix_sum, i, query.second - 1) - range_xor_query(prefix_xor, i, query.second - 1);
                 if (local_max < global_max) break;
-                auto it = std::lower_bound(index_range.begin() + i, index_range.begin() + query.second, local_max, [&range_sum, &range_xor, i](int j, long long val) {
-                    return range_sum.query(i, j) - range_xor.query(i, j) < val;
+                auto it = std::lower_bound(index_range.begin() + i, index_range.begin() + query.second, local_max, [&prefix_sum, &prefix_xor, i](int j, long long val) {
+                    return range_sum_query(prefix_sum, i, j) - range_xor_query(prefix_xor, i, j) < val;
                 });
                 int j = std::distance(index_range.begin(), it);
                 if (answer.first == UNDEFINED || j - i < answer.second - answer.first) {
                     answer = {i + 1, j + 1};
                 }
                 if (elements[i] == 0) {
-                    i += skip_zero[i];
+                    i += skip_zero.at(i);
                 } else {
                     i++;
                 }
@@ -313,7 +230,6 @@ void test() {
 
 
 int main() {
-    for (int i = 0; i <= MAX_ELEMENTS; i++) index_range.push_back(i);
     // test();
     int T; std::cin >> T;
     for (int t = 0; t < T; t++) {
