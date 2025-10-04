@@ -16,7 +16,7 @@ long long solve_bruteforce(int n) {
     // We reverse each row to make it easier to calculate arr[]
     long long answer = 0;
     int mod = 1000000007;
-    for (int i = 0; i <= n; i++) {
+    for (int i = 1; i <= n; i++) {
         arr.at(0) = 1;
         for (int j = 1; j < i - 1; j++) {
             arr.at(j) = (arr.at(j - 1) + arr.at(j)) % mod;
@@ -83,7 +83,7 @@ long long solve_efficient(int n) {
 
 
 void test() {
-    for (int n = 1; n < 1000; n++) {
+    for (int n = 1; n <= 1000; n++) {
         long long answer_bruteforce = solve_bruteforce(n);
         long long answer_efficient = solve_efficient(n);
         assert(answer_efficient == answer_bruteforce);
