@@ -46,7 +46,7 @@ private:
                 result = (result * base) % mod;
             }
             base = (base * base) % mod;
-            exp >>= 1;                                              // exp = exp / 2
+            exp = exp / 2;
         }
         return result;
     }
