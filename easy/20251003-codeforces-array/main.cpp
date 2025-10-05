@@ -9,11 +9,10 @@ long long solve_bruteforce(int n) {
     std::vector<long long> arr(n);
     // Calculate no less than the preciding one
     //             1
-    //           2   1
-    //         6   3   1
-    //       20  10  4   1
-    //     70  35  15  5   1
-    // We reverse each row to make it easier to calculate arr[]
+    //           1   2
+    //         1   3   6
+    //       1   4   10  20
+    //     1   5   15  35  70
     long long answer = 0;
     int mod = 1000000007;
     for (int i = 1; i <= n; i++) {
@@ -21,6 +20,7 @@ long long solve_bruteforce(int n) {
         for (int j = 1; j < i - 1; j++) {
             arr.at(j) = (arr.at(j - 1) + arr.at(j)) % mod;
         }
+        // The last element is double
         if (i - 2 >= 0) {
             arr.at(i - 1) = (arr.at(i - 2) * 2) % mod;
         }
