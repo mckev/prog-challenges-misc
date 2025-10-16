@@ -36,105 +36,187 @@ public:
 
 
 /*
- * Disjoint Sparse Table
- *
- * Usage:
- * - Initialize with a vector<T>.
- * - Call init() to prepare internal structures.
- * - query(l, r) returns the combined result over [l, r].
- *
- * Notes:
- * - 0-based indexing.
- * - Modify `comb` and `id` for different associative operations:
- *   For sum: comb = +, id = 0
- *   For product: comb = *, id = 1
- *   For gcd: comb = gcd, id = 0
- *   For min: comb = min, id = large_value (e.g. 1e18)
- * - If TLE occurs, consider using integer arrays instead of vectors.
+ * Segment Tree
  */
+
+/*
+1) Works for any associative operation (sum, min, max, gcd, xor, etc.)
+2) 0-based indexing.
+3) Change `comb()` function for your operation.
+4) Change `id` (identity value):
+     - sum, diff: 0
+     - mult, div: 1
+     - min: 1e18 or numeric_limits<T>::max()
+     - max: -1e18 or numeric_limits<T>::min()
+     - gcd: 0
+     - lcm: 1
+5) Supports point updates and range queries.
+6) Build from array in O(n), query and update in O(log n).
+7) query: [l, r)
+*/
 
 template <class T>
 struct RangeQuerySum {
-    int n;                                  // log size
-    std::vector<std::vector<T>> stor;       // precomputed prefix/suffix combinations
-    std::vector<T> a;                       // input array, padded to power of two
-    T id = 0;                               // identity element for `comb`
+    int n;
+    std::vector<T> tree;
+    T id; // identity element
 
-    // Define associative operation here
-    T comb(const T& x, const T& y) const { return x + y; }
-
-    RangeQuerySum(const std::vector<T>& arr) : a(arr) {
-        n = 0;
-        while ((1 << n) < (int)a.size()) ++n;
-        a.resize(1 << n, id);
-        stor.assign(1 << n, std::vector<T>(n + 1, id));
+    // === Associative combine function ===
+    T comb(T a, T b) {
+        return a + b; // modify according to your operation
     }
 
-    void fill(int l, int r, int depth) {
-        if (depth < 0) return;
-        int m = (l + r) / 2;
-        T prefix = id;
-        for (int i = m - 1; i >= l; --i)
-            stor[i][depth] = prefix = comb(a[i], prefix);
-        T suffix = id;
-        for (int i = m; i < r; ++i)
-            stor[i][depth] = suffix = comb(suffix, a[i]);
-        fill(l, m, depth - 1);
-        fill(m, r, depth - 1);
+    RangeQuerySum(int sz, T id_val = 0) {
+        id = id_val;
+        n = 1;
+        while (n < sz)
+            n <<= 1;
+        tree.assign(2 * n, id);
     }
 
-    void init() {
-        fill(0, 1 << n, n - 1);
+    RangeQuerySum(const std::vector<T>& arr, T id_val = 0) {
+        id = id_val;
+        n = 1;
+        while (n < (int)arr.size())
+            n <<= 1;
+        tree.assign(2 * n, id);
+        build(arr);
     }
 
-    // Query associative combination over [l, r]
-    T query(int l, int r) const {
-        if (l == r) return a[l];
-        int t = 31 - __builtin_clz(l ^ r);
-        return comb(stor.at(l).at(t), stor.at(r).at(t));
+    // === Build from array ===
+    void build(const std::vector<T>& arr, int x, int lx, int rx) {
+        if (rx - lx == 1) {
+            if (lx < (int)arr.size())
+                tree[x] = arr[lx];
+            return;
+        }
+        int mid = (lx + rx) / 2;
+        build(arr, 2 * x + 1, lx, mid);
+        build(arr, 2 * x + 2, mid, rx);
+        tree[x] = comb(tree[2 * x + 1], tree[2 * x + 2]);
+    }
+
+    void build(const std::vector<T>& arr) {
+        build(arr, 0, 0, n);
+    }
+
+    // === Point Update ===
+    void set(int idx, T val, int x, int lx, int rx) {
+        if (rx - lx == 1) {
+            tree[x] = val;
+            return;
+        }
+        int mid = (lx + rx) / 2;
+        if (idx < mid)
+            set(idx, val, 2 * x + 1, lx, mid);
+        else
+            set(idx, val, 2 * x + 2, mid, rx);
+
+        tree[x] = comb(tree[2 * x + 1], tree[2 * x + 2]);
+    }
+
+    void set(int idx, T val) {
+        set(idx, val, 0, 0, n);
+    }
+
+    // === Range Query ===
+    T query(int l, int r, int x, int lx, int rx) {
+        if (lx >= r || rx <= l)
+            return id;
+        if (lx >= l && rx <= r)
+            return tree[x];
+
+        int mid = (lx + rx) / 2;
+        T left = query(l, r, 2 * x + 1, lx, mid);
+        T right = query(l, r, 2 * x + 2, mid, rx);
+        return comb(left, right);
+    }
+
+    T query(int l, int r) {
+        return query(l, r, 0, 0, n);
     }
 };
 
 
 template <class T>
 struct RangeQueryXor {
-    int n;                                  // log size
-    std::vector<std::vector<T>> stor;       // precomputed prefix/suffix combinations
-    std::vector<T> a;                       // input array, padded to power of two
-    T id = 0;                               // identity element for `comb`
+    int n;
+    std::vector<T> tree;
+    T id; // identity element
 
-    // Define associative operation here
-    T comb(const T& x, const T& y) const { return x ^ y; }
-
-    RangeQueryXor(const std::vector<T>& arr) : a(arr) {
-        n = 0;
-        while ((1 << n) < (int)a.size()) ++n;
-        a.resize(1 << n, id);
-        stor.assign(1 << n, std::vector<T>(n + 1, id));
+    // === Associative combine function ===
+    T comb(T a, T b) {
+        return a ^ b; // modify according to your operation
     }
 
-    void fill(int l, int r, int depth) {
-        if (depth < 0) return;
-        int m = (l + r) / 2;
-        T prefix = id;
-        for (int i = m - 1; i >= l; --i)
-            stor[i][depth] = prefix = comb(a[i], prefix);
-        T suffix = id;
-        for (int i = m; i < r; ++i)
-            stor[i][depth] = suffix = comb(suffix, a[i]);
-        fill(l, m, depth - 1);
-        fill(m, r, depth - 1);
+    RangeQueryXor(int sz, T id_val = 0) {
+        id = id_val;
+        n = 1;
+        while (n < sz)
+            n <<= 1;
+        tree.assign(2 * n, id);
     }
 
-    void init() {
-        fill(0, 1 << n, n - 1);
+    RangeQueryXor(const std::vector<T>& arr, T id_val = 0) {
+        id = id_val;
+        n = 1;
+        while (n < (int)arr.size())
+            n <<= 1;
+        tree.assign(2 * n, id);
+        build(arr);
     }
 
-    // Query associative combination over [l, r]
-    T query(int l, int r) const {
-        if (l == r) return a[l];
-        int t = 31 - __builtin_clz(l ^ r);
-        return comb(stor.at(l).at(t), stor.at(r).at(t));
+    // === Build from array ===
+    void build(const std::vector<T>& arr, int x, int lx, int rx) {
+        if (rx - lx == 1) {
+            if (lx < (int)arr.size())
+                tree[x] = arr[lx];
+            return;
+        }
+        int mid = (lx + rx) / 2;
+        build(arr, 2 * x + 1, lx, mid);
+        build(arr, 2 * x + 2, mid, rx);
+        tree[x] = comb(tree[2 * x + 1], tree[2 * x + 2]);
+    }
+
+    void build(const std::vector<T>& arr) {
+        build(arr, 0, 0, n);
+    }
+
+    // === Point Update ===
+    void set(int idx, T val, int x, int lx, int rx) {
+        if (rx - lx == 1) {
+            tree[x] = val;
+            return;
+        }
+        int mid = (lx + rx) / 2;
+        if (idx < mid)
+            set(idx, val, 2 * x + 1, lx, mid);
+        else
+            set(idx, val, 2 * x + 2, mid, rx);
+
+        tree[x] = comb(tree[2 * x + 1], tree[2 * x + 2]);
+    }
+
+    void set(int idx, T val) {
+        set(idx, val, 0, 0, n);
+    }
+
+    // === Range Query ===
+    T query(int l, int r, int x, int lx, int rx) {
+        if (lx >= r || rx <= l)
+            return id;
+        if (lx >= l && rx <= r)
+            return tree[x];
+
+        int mid = (lx + rx) / 2;
+        T left = query(l, r, 2 * x + 1, lx, mid);
+        T right = query(l, r, 2 * x + 2, mid, rx);
+        return comb(left, right);
+    }
+
+    T query(int l, int r) {
+        return query(l, r, 0, 0, n);
     }
 };
 
@@ -144,16 +226,16 @@ public:
     std::pair<int, int> solve(const std::vector<long long>& elements, std::pair<int, int>& query) const {
         std::pair<int, int> answer = {UNDEFINED, UNDEFINED};
 
-        RangeQuerySum<long long> range_sum = RangeQuerySum(elements); range_sum.init();
-        RangeQueryXor<long long> range_xor = RangeQueryXor(elements); range_xor.init();
-        long long global_max = range_sum.query(query.first - 1, query.second - 1) - range_xor.query(query.first - 1, query.second - 1);
+        RangeQuerySum<long long> range_sum = RangeQuerySum(elements, (long long) 0);
+        RangeQueryXor<long long> range_xor = RangeQueryXor(elements, (long long) 0);
+        long long global_max = range_sum.query(query.first - 1, query.second) - range_xor.query(query.first - 1, query.second);
         std::vector<int> index_range; for (int i = 0; i < query.second; i++) index_range.push_back(i);
 
         for (int i = query.first - 1; i < query.second; i++) {
-            long long local_max = range_sum.query(i, query.second - 1) - range_xor.query(i, query.second - 1);
+            long long local_max = range_sum.query(i, query.second) - range_xor.query(i, query.second);
             if (local_max < global_max) break;
             auto it = std::lower_bound(index_range.begin() + i, index_range.begin() + query.second, local_max, [&range_sum, &range_xor, i](int j, long long val) {
-                return range_sum.query(i, j) - range_xor.query(i, j) < val;
+                return range_sum.query(i, j + 1) - range_xor.query(i, j + 1) < val;
             });
             int j = std::distance(index_range.begin(), it);
             if (answer.first == UNDEFINED || j - i < answer.second - answer.first) {
