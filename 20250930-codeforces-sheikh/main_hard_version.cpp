@@ -43,14 +43,14 @@ public:
 
 class Solution {
 private:
-        static long long range_query_sum(const std::vector<long long>& prefix_sum, int l, int r) {
-            // [l - r], 0 based indexing
-            return prefix_sum.at(r) - (l - 1 >= 0 ? prefix_sum.at(l - 1) : 0);
-        }
-        static long long range_query_xor(const std::vector<long long>& prefix_xor, int l, int r) {
-            // [l - r], 0 based indexing
-            return prefix_xor.at(r) ^ (l - 1 >= 0 ? prefix_xor.at(l - 1) : 0);
-        }
+    static long long range_query_sum(const std::vector<long long>& prefix_sum, int l, int r) {
+        // [l - r], 0 based indexing
+        return prefix_sum.at(r) - (l - 1 >= 0 ? prefix_sum.at(l - 1) : 0);
+    }
+    static long long range_query_xor(const std::vector<long long>& prefix_xor, int l, int r) {
+        // [l - r], 0 based indexing
+        return prefix_xor.at(r) ^ (l - 1 >= 0 ? prefix_xor.at(l - 1) : 0);
+    }
 
 public:
     std::vector<std::pair<int, int>> solve(const std::vector<long long>& elements, const std::vector<std::pair<int, int>>& queries) const {
