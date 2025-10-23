@@ -121,7 +121,6 @@ public:
     }
 
     long long solve(long long N, long long A, long long B) {
-        const int MAX_PRIMES = 10000;                // 10000019;
         factors = find_factors(B, primes);
         long long total_ways = dfs(N, A, 0, 1);
         return total_ways;
