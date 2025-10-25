@@ -163,8 +163,10 @@ void test() {
     {
         // Test case 91
         std::vector<long long> A = { 0, 8, 9, 2, 6, 9, 6, 3, 12, 2, 9, 1, 14, 1, 11, 4, 12, 8, 5, 7, 11, 12, 6, 9, 4, 8, 1, 15, 4, 8, 11, 0, 11, 15, 1, 8, 13, 1, 0, 6, 4, 9, 11, 13, 11, 4, 9, 7, 4, 5, 5, 13, 4, 15, 12, 0, 2, 14, 2, 4, 11, 14, 13, 15 };
+        long long answer_bruteforce = solve_bruteforce(A);
+        assert(answer_bruteforce == 45489);
         long long answer_efficient = solve_efficient(A);
-        assert(answer_efficient == 45489);
+        assert(answer_efficient == answer_bruteforce);
     }
     {
         std::random_device rd;
