@@ -110,7 +110,7 @@ long long solve_efficient_parallel(const std::vector<long long>& A) {
         long long x = 0;
         long long counter = 0;
         for (int r = index; r < A.size(); r++) {
-            // Process subarray [l, r]
+            // Process subarray [index, r]
             x ^= A.at(r);
             if (x != 0) {
                 answer += r - index + 1;
