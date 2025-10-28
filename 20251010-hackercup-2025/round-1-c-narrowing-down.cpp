@@ -84,8 +84,8 @@ void parallel_transform_vector(const std::vector<T>& input, std::vector<T>& outp
     }
 
     assert(threads.size() < 200000);                            // See: ulimit -u
-    for (auto& th : threads)
-        th.join();
+    for (auto& thread : threads)
+        thread.join();
 }
 
 
