@@ -7,7 +7,7 @@
 bool solve(int N, int M) {
     // Game can end if N >= M
     if (N < M) return false;
-    // However and in case of deuce (at 2 * (M - 1)) then N cannot be odd
+    // However in case of deuce (at 2 * (M - 1)) then N cannot be odd
     if (N <= 2 * (M - 1)) return true;
     return N % 2 == 0;
 }
