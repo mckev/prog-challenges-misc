@@ -31,6 +31,7 @@ private:
         { { DOWN, LEFT }, { RIGHT, UP } },
         { { DOWN, RIGHT }, { LEFT, UP } },
     };
+    int max_x, max_y;
     bool is_finished;
 
 public:
@@ -44,8 +45,7 @@ public:
         } else {
             return false;
         }
-        // Special case: We arrived at bottom-right cell
-        int max_y = grid.size(), max_x = grid.at(0).size();
+        // Case we arrived at bottom-right cell
         if (x == max_x - 1 && y == max_y - 1) {
             is_finished = true;
             return true;
@@ -58,15 +58,15 @@ public:
     }
 
     bool hasValidPath(const std::vector<std::vector<int>>& grid) {
+        max_y = grid.size(); max_x = grid.at(0).size();
+        is_finished = false;
         // We started at upper-left cell
         int street_flow = grid.at(0).at(0) - 1;
-        // There are two possible directions: first.in and second.in.
-        // As the case of { {4, 1}, {6, 1} }, we need to traverse BOTH.
+        // There are two possible directions: first.in and second.in. As the case of { {4, 1}, {6, 1} }, we need to traverse BOTH.
         {
             Direction direction = StreetFlows.at(street_flow).first.in;
             int x = 0, y = 0;
-            is_finished = false;
-            int max_y = grid.size(), max_x = grid.at(0).size(); std::vector<std::vector<bool>> is_traversed(max_y, std::vector<bool>(max_x, false));
+            std::vector<std::vector<bool>> is_traversed(max_y, std::vector<bool>(max_x, false));
             while (true) {
                 if (is_traversed.at(y).at(x)) return false; is_traversed.at(y).at(x) = true;
                 bool is_valid = traverse(grid, x, y, direction);
@@ -77,8 +77,7 @@ public:
         {
             Direction direction = StreetFlows.at(street_flow).second.in;
             int x = 0, y = 0;
-            is_finished = false;
-            int max_y = grid.size(), max_x = grid.at(0).size(); std::vector<std::vector<bool>> is_traversed(max_y, std::vector<bool>(max_x, false));
+            std::vector<std::vector<bool>> is_traversed(max_y, std::vector<bool>(max_x, false));
             while (true) {
                 if (is_traversed.at(y).at(x)) return false; is_traversed.at(y).at(x) = true;
                 bool is_valid = traverse(grid, x, y, direction);
